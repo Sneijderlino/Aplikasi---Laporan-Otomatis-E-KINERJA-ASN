@@ -1,13 +1,14 @@
-Aplikasi-Laporan-eKINERJA/
+EKINERJA-MY-ASN/
 ├── main.py
-├── identitas_asn.json
-├── laporan_asn.xlsx
-├── Wallpaper.png
+├── config.py
+├── utils.py
+├── Struktur.txt
 ├── requirements.txt
 ├── README.md
 ├── LICENSE
 ├── .gitignore
-├── bugreport.md
-├── config.py
-├── logo.ico
+├── bug_report.md
+├── Logo/
+│   └── logo.ico
 └── img/
+    └── Walpaper.png
