@@ -1,6 +1,10 @@
-aplikasi_laporan/
-├── main.py
-├── config.py
-└── utils.py
-
+Aplikasi-Laporan-eKINERJA/
+│
+├── laporan_app.py              # File utama aplikasi
+├── identitas_asn.json          # Data identitas ASN
+├── laporan_asn.xlsx            # Database utama laporan
+├── img/
+│   └── Walpaper.png            # Gambar utama (logo/banner)
+├── requirements.txt            # Daftar library yang dibutuhkan
+└── LICENSE                     # File lisensi MIT
 

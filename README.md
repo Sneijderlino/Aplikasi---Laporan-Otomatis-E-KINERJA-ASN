@@ -10,6 +10,7 @@
 
 _Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA Berbasis Python & Tkinter._
 
+
 ## 🎯 Tujuan Proyek
 
  _Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
@@ -79,7 +80,7 @@ pip install -r requirements.txt
 
 ---
 
-## Langkah 4: Menjalankan Aplikasi
+### Langkah 4: Menjalankan Aplikasi
 
 ```bash
 Jalankan skrip utama:
@@ -88,6 +89,26 @@ python laporan_app.py
 
 ---
 
+
+## 📥 Cara Download Aplikasi (Versi Rilis)
+
+Kamu juga dapat langsung *mengunduh file aplikasi yang sudah jadi* melalui halaman rilis GitHub.
+
+### 🪄 Langkah 1: Buka Halaman Rilis
+1. Klik tab **[Releases](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/releases)** pada repository ini.  
+2. Pilih versi rilis terbaru (misalnya v1.0).
+
+### 💾 Langkah 2: Unduh File
+- Cari bagian *“Assets”* di bawah rilis tersebut.
+- Klik file .zip atau .exe (jika sudah di-build) untuk mengunduhnya ke perangkatmu.
+
+### 🖥 Langkah 3: Ekstrak & Jalankan
+- Ekstrak file .zip ke folder yang kamu inginkan.
+- Jika file .exe tersedia → klik 2× untuk langsung membuka aplikasi.
+- Jika file .py (source code):
+  ```bash
+  # Pastikan Python 3.8+ sudah terpasang
+  python laporan_app.py
 ---
 
 <p align="center">
