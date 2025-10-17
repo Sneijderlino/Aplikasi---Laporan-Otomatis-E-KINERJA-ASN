@@ -12,7 +12,7 @@ _Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA Berbasis Python & Tkinter
 
 ## 🎯 Tujuan Proyek
 
-Aplikasi _Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
+ _Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
 
 ## ✨ Fitur Utama
 
