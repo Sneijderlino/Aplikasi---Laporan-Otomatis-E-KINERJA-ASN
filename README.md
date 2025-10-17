@@ -2,7 +2,7 @@
   <img src="/img/Walpaper.png" alt="" width="900"/>
 </p>
 
-# 🏢 APLIKASI LAPORAN EKINERJA
+# 🏢 APLIKASI LAPORAN E-KINERJA
 
 [![License](https://img.shields.io/github/license/[USER]/[REPO]?style=for-the-badge&color=2ecc71)](LICENSE)
 [![Python Version](https://img.shields.io/badge/Python-3.8+-3776AB.svg?style=for-the-badge&logo=python)](https://www.python.org/)
