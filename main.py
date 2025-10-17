@@ -26,7 +26,7 @@ from utils import (
 class LaporanApp:
     def __init__(self, root):
         self.root = root
-        root.title("Aplikasi Laporan Otomatis E-KINERJA ASN")
+        root.title("Aplikasi Laporan E-KINERJA ASN")
         root.geometry("1280x900")
         self.selected_foto_path = ""
         self.preview_img = None
@@ -75,8 +75,8 @@ class LaporanApp:
         # Header
         header = ttk.Frame(self.root, style="Header.TFrame", height=56)
         header.pack(fill="x")
-        ttk.Label(header, text="APLIKASI BY SNEIJDERLINO ", style="Header.TLabel").pack(side="left", padx=12, pady=8)
-        ttk.Label(header, text="Aplikasi Laporan Otomatis E-KINERJA ASN", style="SubHeader.TLabel").pack(side="left", padx=12)
+        ttk.Label(header, text="Aplikasi LAPORAN E-KINERJA ASN", style="Header.TLabel").pack(side="left", padx=12, pady=8)
+        ttk.Label(header, text="By Sneijderlino", style="SubHeader.TLabel").pack(side="left", padx=12)
         btn_logout = tk.Button(header, text="Log Out", bg="#DCD7FF", relief="flat", command=self.on_logout)
         btn_logout.pack(side="right", padx=12, pady=8)
         style_button_hover(btn_logout, normal_bg="#DCD7FF", hover_bg="#E9E6FF", active_bg="#C0B5FF")

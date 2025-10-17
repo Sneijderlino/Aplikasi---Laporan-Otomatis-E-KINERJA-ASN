@@ -2,17 +2,17 @@
   <img src="/img/Walpaper.png" alt="" width="900"/>
 </p>
 
-# 🏢 APLIKASI EKINERJA ASN - LAPORAN KEJADIAN
+# 🏢 APLIKASI LAPORAN EKINERJA
 
 [![License](https://img.shields.io/github/license/[USER]/[REPO]?style=for-the-badge&color=2ecc71)](LICENSE)
 [![Python Version](https://img.shields.io/badge/Python-3.8+-3776AB.svg?style=for-the-badge&logo=python)](https://www.python.org/)
 [![OS Support](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-informational?style=for-the-badge)](https://www.python.org/)
 
-_Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA ASN Berbasis Python & Tkinter._
+_Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA Berbasis Python & Tkinter._
 
 ## 🎯 Tujuan Proyek
 
-Aplikasi _Aplikasi Laporan Otomatis E-KINERJA ASN_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
+Aplikasi _Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
 
 ## ✨ Fitur Utama
 
@@ -48,8 +48,8 @@ Aplikasi ini membutuhkan library berikut. Beberapa di antaranya bersifat _opsion
 ### Langkah 1: Klon Repositori
 
 ```bash
-git clone https://github.com/Sneijderlino/Aplikasi---Laporan-Otomatis-E-KINERJA-ASN.git
-cd Laporan-Otomatis-E-KINERJA-ASN
+git clone https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA.git
+cd Aplikasi-Laporan-eKINERJA
 ```
 
 ---
@@ -122,4 +122,3 @@ python laporan_app.py
   Dibuat dengan ❤ oleh <a href="https://github.com/Sneijderlino">Sneijderlino</a><br>
   <em>“Code. Create. Conquer.”</em>
 </p>
-
