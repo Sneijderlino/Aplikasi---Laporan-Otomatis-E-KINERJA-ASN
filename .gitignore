@@ -1,0 +1,18 @@
+# Python Cache dan Environment
+__pycache__/
+*.pyc
+venv/
+.venv/
+.mypy_cache/
+
+# File Data Persisten (TIDAK diunggah ke GitHub)
+laporan_asn.xlsx
+identitas_asn.json
+
+# PyInstaller / Kompilasi
+build/
+dist/
+*.spec
+
+# Visual Studio Code
+.vscode/

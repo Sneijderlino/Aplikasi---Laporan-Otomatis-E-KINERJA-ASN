@@ -1,0 +1,7 @@
+# Dependensi Utama
+pandas
+
+# Dependensi Opsional (Disarankan untuk Fungsionalitas Penuh)
+openpyxl
+Pillow
+fpdf
