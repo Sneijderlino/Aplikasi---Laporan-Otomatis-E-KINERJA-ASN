@@ -96,11 +96,11 @@ Kamu juga dapat langsung *mengunduh file aplikasi yang sudah jadi* melalui halam
 
 ### 🪄 Langkah 1: Buka Halaman Rilis
 1. Klik tab **[Releases](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/releases)** pada repository ini.  
-2. Pilih versi rilis terbaru (misalnya v1.0).
+2. Pilih versi rilis terbaru (v1.0).
 
 ### 💾 Langkah 2: Unduh File
 - Cari bagian *“Assets”* di bawah rilis tersebut.
-- Klik file .zip atau .exe (jika sudah di-build) untuk mengunduhnya ke perangkatmu.
+- Klik file .zip ATAU .tar.gz untuk mengunduhnya ke perangkatmu.
 
 ### 🖥 Langkah 3: Ekstrak & Jalankan
 - Ekstrak file .zip ke folder yang kamu inginkan.
@@ -109,7 +109,15 @@ Kamu juga dapat langsung *mengunduh file aplikasi yang sudah jadi* melalui halam
   ```bash
   # Pastikan Python 3.8+ sudah terpasang
   python laporan_app.py
----
+
+  ```
+
+### ✅ Tips:
+
+- Gunakan Windows 10/11 atau Linux dengan Python 3.8+
+
+- Jika diperlukan, install dependensi dari requirements.txt:
+- pip install -r requirements.txt
 
 <p align="center">
   <img src="https://img.shields.io/badge/Made%20with-Python-blue?style=for-the-badge&logo=python" alt="Python Badge"/>
