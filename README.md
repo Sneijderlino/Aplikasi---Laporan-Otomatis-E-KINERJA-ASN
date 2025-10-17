@@ -10,10 +10,9 @@
 
 _Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA Berbasis Python & Tkinter._
 
-
 ## 🎯 Tujuan Proyek
 
- _Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
+_Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
 
 ## ✨ Fitur Utama
 
@@ -89,23 +88,26 @@ python laporan_app.py
 
 ---
 
-
 ## 📥 Cara Download Aplikasi (Versi Rilis)
 
-Kamu juga dapat langsung *mengunduh file aplikasi yang sudah jadi* melalui halaman rilis GitHub.
+Kamu juga dapat langsung _mengunduh file aplikasi yang sudah jadi_ melalui halaman rilis GitHub.
 
 ### 🪄 Langkah 1: Buka Halaman Rilis
-1. Klik tab **[Releases](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/releases)** pada repository ini.  
+
+1. Klik tab **[Releases](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/releases)** pada repository ini.
 2. Pilih versi rilis terbaru (v1.0).
 
 ### 💾 Langkah 2: Unduh File
-- Cari bagian *“Assets”* di bawah rilis tersebut.
+
+- Cari bagian _“Assets”_ di bawah rilis tersebut.
 - Klik file .zip ATAU .tar.gz untuk mengunduhnya ke perangkatmu.
 
 ### 🖥 Langkah 3: Ekstrak & Jalankan
+
 - Ekstrak file .zip ke folder yang kamu inginkan.
 - Jika file .exe tersedia → klik 2× untuk langsung membuka aplikasi.
 - Jika file .py (source code):
+
   ```bash
   # Pastikan Python 3.8+ sudah terpasang
   python laporan_app.py
@@ -141,13 +143,13 @@ Kamu juga dapat langsung *mengunduh file aplikasi yang sudah jadi* melalui halam
 
 <p align="center">
   💡 Temukan bug atau ingin menambahkan fitur baru?<br>
-  Silakan buka <a href="https://github.com/Sneijderlino/youtube-downloader-pro/issues">Issues</a> atau buat <a href="https://github.com/Sneijderlino/youtube-downloader-pro/pulls">Pull Request</a>.<br><br>
+  Silakan buka <a href="https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/issues">Issues</a> atau buat <a href="https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/pulls">Pull Request</a>.<br><br>
   ⭐ Jangan lupa beri bintang jika proyek ini bermanfaat!
 </p>
 
 ---
 
 <p align="center">
-  Dibuat dengan ❤ oleh <a href="https://github.com/Sneijderlino">Sneijderlino</a><br>
+  Dibuat dengan ❤ oleh <a href="https://www.tiktok.com/@sneijderlino_official?is_from_webapp=1&sender_device=pc">Sneijderlino</a><br>
   <em>“Code. Create. Conquer.”</em>
 </p>
