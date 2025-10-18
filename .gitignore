@@ -16,3 +16,5 @@ dist/
 
 # Visual Studio Code
 .vscode/
+
+*.exe
