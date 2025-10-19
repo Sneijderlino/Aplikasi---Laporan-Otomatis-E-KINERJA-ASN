@@ -19,7 +19,7 @@ VSVersionInfo(
         StringStruct('InternalName', 'eKinerjaASN'),
         StringStruct('OriginalFilename', 'eKinerjaASN.exe'),
         StringStruct('ProductName', 'e-Kinerja ASN'),
-        StringStruct('ProductVersion', '1.0.0.0')])
+        StringStruct('ProductVersion', 'V1.0')])
       ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]
