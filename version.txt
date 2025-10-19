@@ -13,9 +13,9 @@ VSVersionInfo(
   kids=[
     StringFileInfo([
       StringTable('040904B0', [
-        StringStruct('CompanyName', 'Dinas Satuan Polisi Pamong Praja Dan Pemadam Kebakaran'),
+        StringStruct('CompanyName', 'Sneijderlino Official'),
         StringStruct('FileDescription', 'Aplikasi Laporan e-Kinerja ASN'),
-        StringStruct('FileVersion', '1.0.0.0'),
+        StringStruct('FileVersion', 'V1.0'),
         StringStruct('InternalName', 'eKinerjaASN'),
         StringStruct('OriginalFilename', 'eKinerjaASN.exe'),
         StringStruct('ProductName', 'e-Kinerja ASN'),
