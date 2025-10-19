@@ -102,6 +102,7 @@ Kamu juga dapat langsung _mengunduh file aplikasi yang sudah jadi_ melalui halam
 - Cari bagian _“Assets”_ di bawah rilis tersebut.
 - Klik file .zip ATAU .tar.gz untuk mengunduhnya ke perangkatmu.
 
+
 ### 🖥 Langkah 3: Ekstrak & Jalankan
 
 - Ekstrak file .zip ke folder yang kamu inginkan.
