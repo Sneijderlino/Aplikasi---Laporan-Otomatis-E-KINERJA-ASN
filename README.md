@@ -4,8 +4,9 @@
 
 # 🏢 APLIKASI LAPORAN E-KINERJA
 
-[![License](https://img.shields.io/github/license/[USER]/[REPO]?style=for-the-badge&color=2ecc71)](LICENSE)
+[![License](https://img.shields.io/github/license/Sneijderlino/Aplikasi-Laporan-eKINERJA?style=for-the-badge&color=2ecc71)](LICENSE)
 [![Python Version](https://img.shields.io/badge/Python-3.8+-3776AB.svg?style=for-the-badge&logo=python)](https://www.python.org/)
+[![CI](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/actions/workflows/python-app.yml/badge.svg)](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/actions)
 [![OS Support](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-informational?style=for-the-badge)](https://www.python.org/)
 
 _Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA Berbasis Python & Tkinter._
@@ -83,7 +84,7 @@ pip install -r requirements.txt
 
 ```bash
 Jalankan skrip utama:
-python laporan_app.py
+python E-kinerjaASN.py
 ```
 
 ---
