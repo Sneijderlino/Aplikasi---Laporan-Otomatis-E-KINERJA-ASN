@@ -1,0 +1,7 @@
+# Set default behavior for text files
+* text=auto
+
+# Force CRLF on Windows, LF on Unix (leave default for most files)
+*.py eol=lf
+*.md eol=lf
+*.yml eol=lf

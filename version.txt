@@ -14,11 +14,11 @@ VSVersionInfo(
     StringFileInfo([
       StringTable('040904B0', [
         StringStruct('CompanyName', 'Sneijderlino Official'),
-        StringStruct('FileDescription', 'Aplikasi Laporan e-Kinerja ASN'),
+        StringStruct('FileDescription', 'Aplikasi Laporan E-Kinerja ASN'),
         StringStruct('FileVersion', 'V1.0'),
-        StringStruct('InternalName', 'eKinerjaASN'),
-        StringStruct('OriginalFilename', 'eKinerjaASN.exe'),
-        StringStruct('ProductName', 'e-Kinerja ASN'),
+        StringStruct('InternalName', 'E-kinerjaASN'),
+        StringStruct('OriginalFilename', 'E-kinerjaASN.exe'),
+        StringStruct('ProductName', 'E-Kinerja ASN'),
         StringStruct('ProductVersion', 'V1.0')])
       ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
