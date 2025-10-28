@@ -33,6 +33,7 @@ except Exception:
     OPENPYXL_AVAILABLE = False
 
 from config import *  # Import semua konstanta
+from users import add_user, verify_user, ensure_has_any_user, user_exists, verify_full_name, reset_password
 
 # ----------------- Utility Functions ------------------------
 
@@ -92,22 +93,22 @@ def get_current_time_storage():
 
 # ----------------- Excel helpers ------------------------
 
-def ensure_excel():
+def ensure_excel(excel_file):
     """Membuat file Excel jika belum ada."""
-    if not os.path.exists(EXCEL_FILE):
+    if not os.path.exists(excel_file):
         df = pd.DataFrame(columns=COLUMNS)
-        df.to_excel(EXCEL_FILE, index=False, engine="openpyxl")
+        df.to_excel(excel_file, index=False, engine="openpyxl")
 
-def load_data():
+def load_data(excel_file):
     """Memuat data dari file Excel."""
     try:
-        ensure_base_dir(EXCEL_FILE)
+        ensure_base_dir(excel_file)
     except Exception:
         return pd.DataFrame(columns=COLUMNS)
         
-    ensure_excel()
+    ensure_excel(excel_file)
     try:
-        df = pd.read_excel(EXCEL_FILE, engine="openpyxl")
+        df = pd.read_excel(excel_file, engine="openpyxl")
 
         for c in COLUMNS:
             if c not in df.columns:
@@ -120,12 +121,12 @@ def load_data():
         messagebox.showerror("Error", f"Gagal membaca data: {e}")
         return pd.DataFrame(columns=COLUMNS)
 
-def save_data(df):
+def save_data(df, excel_file):
     """Menyimpan DataFrame ke file Excel."""
     try:
-        ensure_base_dir(EXCEL_FILE)
+        ensure_base_dir(excel_file)
         df = df.reindex(columns=COLUMNS)
-        df.to_excel(EXCEL_FILE, index=False, engine="openpyxl")
+        df.to_excel(excel_file, index=False, engine="openpyxl")
     except Exception as e:
         messagebox.showerror("Error", f"Gagal menyimpan data: {e}")
 
@@ -185,43 +186,55 @@ def style_button_hover(btn, normal_bg=None, hover_bg=None, active_bg=None):
 # ----------------- identity persistence ------------------------
 # (Tidak ada perubahan di sini)
 def load_identitas():
-    """Memuat identitas ASN yang tersimpan dari JSON."""
-    try:
-        ensure_base_dir(IDENT_FILE)
-    except Exception:
+    """Load ASN identity from JSON."""
+    if not hasattr(load_identitas, 'username'):
         return {}
         
-    if os.path.exists(IDENT_FILE):
-        try:
-            with open(IDENT_FILE, "r", encoding="utf-8") as f:
+    try:
+        ident_file = get_user_identity_path(load_identitas.username) 
+        ensure_base_dir(ident_file)
+        if os.path.exists(ident_file):
+            with open(ident_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            return {}
+    except Exception:
+        pass
     return {}
 
 def save_identitas(data):
-    """Menyimpan identitas ASN ke JSON."""
+    """Save ASN identity to user-specific JSON."""
+    if not hasattr(load_identitas, 'username'):
+        return
+        
     try:
-        ensure_base_dir(IDENT_FILE)
-        with open(IDENT_FILE, "w", encoding="utf-8") as f:
+        ident_file = get_user_identity_path(load_identitas.username)
+        ensure_base_dir(ident_file)
+        with open(ident_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print("Gagal menyimpan identitas:", e)
 
 def hapus_identitas_file():
-    """Menghapus file identitas ASN."""
+    """Delete user-specific identity file."""
+    if not hasattr(load_identitas, 'username'):
+        return
+        
     try:
-        if os.path.exists(IDENT_FILE):
-            os.remove(IDENT_FILE)
+        ident_file = get_user_identity_path(load_identitas.username)
+        if os.path.exists(ident_file):
+            os.remove(ident_file)
     except Exception as e:
         print("Gagal hapus identitas:", e)
         
 # ----------------- Main App Class ------------------------
 
 class LaporanApp:
-    def __init__(self, root):
+    def __init__(self, root, username):
         self.root = root
-        root.title("Aplikasi Ekinerja — Laporan Kejadian Kebakaran")
+        self.username = username
+        self.excel_file = get_user_excel_file(username)
+        # Set username for identity functions
+        load_identitas.username = username
+        root.title(f"Aplikasi Ekinerja — Laporan Kejadian Kebakaran - {username}")
         root.geometry("1280x800")
         
 
@@ -281,12 +294,38 @@ class LaporanApp:
         style.map("Treeview", background=[('selected', self.ACCENT_COLOR)], foreground=[('selected', self.WHITE_TEXT)])
 
         # Header (Row 0) (Tidak ada perubahan)
+        # Load per-user settings (report subtitle and field labels)
+        try:
+            user_settings = load_user_settings(self.username)
+        except Exception:
+            user_settings = DEFAULT_USER_SETTINGS.copy()
+
+        self.report_subtitle = user_settings.get('report_subtitle', DEFAULT_USER_SETTINGS['report_subtitle'])
+        # per-user kop (header) lines for PDF reports
+        self.kop_lines = user_settings.get('kop_lines', DEFAULT_USER_SETTINGS.get('kop_lines', []))
+        # display label map: internal column name -> display label
+        self.display_labels = user_settings.get('field_labels', DEFAULT_USER_SETTINGS['field_labels']).copy()
+        # reverse map for lookups from display -> key
+        self.display_to_key = {v: k for k, v in self.display_labels.items()}
+
         header = ttk.Frame(root, style="Header.TFrame", height=52)
         header.grid(row=0, column=0, sticky="ew")
         ttk.Label(header, text="APLIKASI BY SNEIJDERLINO ", style="Header.TLabel").pack(side="left", padx=12, pady=4)
-        ttk.Label(header, text="Laporan koordinasi dengan kepala regu terkait informasi kejadian kebakaran", style="SubHeader.TLabel").pack(side="left", padx=12)
+        # subtitle is user-editable
+        self.header_subtitle_label = ttk.Label(header, text=self.report_subtitle, style="SubHeader.TLabel")
+        self.header_subtitle_label.pack(side="left", padx=12)
+
+        # Settings button to allow editing title/labels
+        btn_settings = ttk.Button(header, text="⚙ Pengaturan", command=self.open_settings_window)
+        btn_settings.pack(side="right", padx=6, pady=4)
+
+        # Switch User button
+        btn_switch = tk.Button(header, text="🔄 Tukar Pengguna", bg="#DCD7FF", relief="flat", command=self.switch_user)
+        btn_switch.pack(side="right", padx=6, pady=4)
+        style_button_hover(btn_switch, normal_bg="#DCD7FF", hover_bg="#E9E6FF", active_bg="#C0B5FF")
+
         btn_logout = tk.Button(header, text="Log Out", bg="#DCD7FF", relief="flat", command=self.on_logout)
-        btn_logout.pack(side="right", padx=12, pady=4)
+        btn_logout.pack(side="right", padx=6, pady=4)
         style_button_hover(btn_logout, normal_bg="#DCD7FF", hover_bg="#E9E6FF", active_bg="#C0B5FF")
 
         # Form top (Kontainer Utama Formulir) - Row 1 (Tidak ada perubahan)
@@ -364,13 +403,17 @@ class LaporanApp:
         mid = ttk.Frame(form_frame, style="Form.TFrame", padding="6 4")
         mid.grid(row=0, column=1, sticky="nsew", padx=15)
         self.texts = {}
+        self.mid_labels = {}
         
         mid.grid_columnconfigure(0, weight=1)
         multiline = ["Uraian Kejadian", "Waktu Kebakaran", "Kerusakan", "Tindakan"]
         
         for i, field in enumerate(multiline):
-            lbl = ttk.Label(mid, text=field + ":", style="FormLabel.TLabel", anchor="w")
+            display = self.display_labels.get(field, field)
+            lbl = ttk.Label(mid, text=display + ":", style="FormLabel.TLabel", anchor="w")
             lbl.grid(row=i*2, column=0, sticky="w", pady=(2,0))
+            # keep reference so we can update label when settings change
+            self.mid_labels[field] = lbl
             
             txt_frame = ttk.Frame(mid)
             txt_frame.grid(row=i*2+1, column=0, pady=(1, 5), sticky="ew")
@@ -486,8 +529,15 @@ class LaporanApp:
         
         # Kolom Filter
         ttk.Label(filter_frame, text="Kolom:", style="FormLabel.TLabel").grid(row=0, column=0, padx=2, sticky="w")
-        self.filter_col = ttk.Combobox(filter_frame, values=["Nama", "NIP", "Jabatan", "Unit Kerja", "Uraian Kejadian", "Waktu Kebakaran", "Kerusakan", "Tindakan"], width=13, state="readonly")
-        self.filter_col.set("Nama")
+        # Show display labels in filter combobox (map back to keys on filtering)
+        filter_values = []
+        for c in COLUMNS:
+            # use display label if available, else use column name
+            filter_values.append(self.display_labels.get(c, c))
+        self.filter_col = ttk.Combobox(filter_frame, values=filter_values, width=20, state="readonly")
+        # default to Nama (ensure it's present)
+        default_display = self.display_labels.get("Nama", "Nama")
+        self.filter_col.set(default_display)
         self.filter_col.grid(row=0, column=1, padx=2, pady=1)
         
         # Keyword Filter
@@ -528,7 +578,8 @@ class LaporanApp:
         
 
         for c in cols:
-            self.tree.heading(c, text=c)
+            # show display label in heading when available
+            self.tree.heading(c, text=self.display_labels.get(c, c))
             if c in ("Uraian Kejadian","Waktu Kebakaran","Kerusakan","Tindakan"):
                 self.tree.column(c, width=120, anchor="w")
             elif c in ("Nama", "Jabatan", "Unit Kerja"):
@@ -569,8 +620,7 @@ class LaporanApp:
         pdf.set_right_margin(10)
         pdf.set_auto_page_break(True, margin=10)
 
-        # --- 1. HEADER & JUDUL LAPORAN (Sesuai Gambar) ---
-        # Cek dan tambahkan logo jika ada
+        # --- 1. HEADER & JUDUL LAPORAN ---
         logo_path = LOGO_PATH
         if os.path.exists(logo_path):
             try:
@@ -578,11 +628,22 @@ class LaporanApp:
             except:
                 pass
         
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 5, "Dinas Satuan Polisi Pamong Praja Dan Pemadam Kebakaran", ln=True, align="C")
-        pdf.cell(0, 5, "Kabupaten Maluku Barat Daya", ln=True, align="C")
-        pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 5, "Kota Tiakur", ln=True, align="C")
+        # Use per-user kop_lines if provided; otherwise fallback to defaults
+        kop_lines = getattr(self, 'kop_lines', DEFAULT_USER_SETTINGS.get('kop_lines', [])) or []
+        for i, line in enumerate(kop_lines):
+            try:
+                text = str(line or "")
+            except Exception:
+                text = ""
+
+            # Keep typography similar to previous hardcoded behavior:
+            # first two lines bold size 12, later lines normal size 10
+            if i < 2:
+                pdf.set_font("Arial", "B", 12)
+            else:
+                pdf.set_font("Arial", "", 10)
+            pdf.cell(0, 5, text, ln=True, align="C")
+
         pdf.ln(3)
         
         # GARIS PEMISAH SETELAH KOP
@@ -591,11 +652,11 @@ class LaporanApp:
         pdf.ln(5)
 
         pdf.set_font("Arial", "B", 14)
-        
+
         # Tentukan bulan laporan. Jika kolom tanggal ada, gunakan itu, jika tidak, gunakan default
         report_date_str = row.get("Tanggal", "")
         report_date_obj = parse_date_flexible(report_date_str)
-        
+
         if report_date_obj:
             # Jika laporan tanggal 05-10-2025 (Oktober), E-Kinerja adalah untuk SEPTEMBER 2025
             ekinerja_date = get_previous_month_date(report_date_obj)
@@ -603,12 +664,12 @@ class LaporanApp:
         else:
             # Fallback ke bulan default aplikasi
             ekinerja_month_year_str = self.ekinerja_month_year
-            
+
         pdf.cell(0, 8, f"LAPORAN E-KINERJA BULAN {ekinerja_month_year_str}", ln=True, align="C")
-        
-        pdf.set_font("Arial", "", 10) # Di gambar tidak terlihat Italic, tapi regular
-        pdf.cell(0, 5, "Koordinasi dengan Kepala Regu terkait informasi kejadian kebakaran", ln=True, align="C")
-        
+
+        pdf.set_font("Arial", "", 10) # subtitle customizable per-user
+        pdf.cell(0, 5, str(getattr(self, 'report_subtitle', "")), ln=True, align="C")
+
         pdf.ln(5)
 
         # --- 2. DATA IDENTITAS
@@ -652,8 +713,9 @@ class LaporanApp:
         detail_fields = ["Uraian Kejadian", "Waktu Kebakaran", "Kerusakan", "Tindakan"]
         
         for field in detail_fields:
+            display = self.display_labels.get(field, field)
             pdf.set_font("Arial", "B", 11)
-            pdf.cell(0, 7, f"{field}", ln=True, border=0) 
+            pdf.cell(0, 7, f"{display}", ln=True, border=0) 
             pdf.set_font("Arial", "", 10)
             text = str(row.get(field, "") or "")
             pdf.multi_cell(0, 5, text, 0, 'J')
@@ -848,13 +910,16 @@ class LaporanApp:
 
     def _on_hapus_identitas(self):
         """Menghapus data identitas dari file."""
-        if not os.path.exists(IDENT_FILE):
+        ident_file = get_user_identity_path(self.username)
+        if not os.path.exists(ident_file):
             messagebox.showinfo("Info", "Tidak ada identitas tersimpan.")
             return
             
         if not messagebox.askyesno("Konfirmasi", "Yakin ingin menghapus identitas ASN yang tersimpan?"):
             return
             
+        # Set username for deletion
+        load_identitas.username = self.username
         hapus_identitas_file()
         
         for k in ["Nama","NIP","Jabatan","Unit Kerja"]:
@@ -1114,7 +1179,7 @@ class LaporanApp:
         for r in self.tree.get_children():
             self.tree.delete(r)
             
-        df = filtered_df if filtered_df is not None else load_data()
+        df = filtered_df if filtered_df is not None else load_data(self.excel_file)
         
         for idx, row in df.reset_index(drop=True).iterrows():
             vals = []
@@ -1138,6 +1203,109 @@ class LaporanApp:
                 vals.append(str(v))
                 
             self.tree.insert("", "end", iid=str(idx), values=vals)
+
+    def open_settings_window(self):
+        """Open a modal window to edit per-user report subtitle and field labels."""
+        win = tk.Toplevel(self.root)
+        win.title("Pengaturan Laporan")
+        win.geometry("520x320")
+        win.transient(self.root)
+        win.grab_set()
+
+        frm = ttk.Frame(win, padding=12)
+        frm.pack(fill="both", expand=True)
+
+        ttk.Label(frm, text="Subjudul laporan (tampil di header & PDF):", font=("Segoe UI", 10)).pack(anchor="w", pady=(4,2))
+        subtitle_var = tk.StringVar(value=self.report_subtitle)
+        subtitle_entry = ttk.Entry(frm, textvariable=subtitle_var, width=80)
+        subtitle_entry.pack(fill="x", pady=(0,8))
+
+        # Kop (header) lines for PDF (per-user editable)
+        ttk.Label(frm, text="Kop Laporan (header) - Baris 1..3 (akan tampil di PDF):", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        kop_vars = []
+        current_kop = getattr(self, 'kop_lines', DEFAULT_USER_SETTINGS.get('kop_lines', [])) or ["", "", ""]
+        # Ensure exactly 3 entries in UI for convenience
+        for i in range(3):
+            v = tk.StringVar(value=(current_kop[i] if i < len(current_kop) else ""))
+            kop_vars.append(v)
+            row_k = ttk.Frame(frm)
+            row_k.pack(fill="x", pady=2)
+            ttk.Label(row_k, text=f"Baris {i+1}:", width=10).pack(side="left")
+            ttk.Entry(row_k, textvariable=v, width=70).pack(side="left", fill="x", expand=True)
+
+        ttk.Label(frm, text="Ubah label kolom detail (hanya tampilan):", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(6,4))
+
+        fields = ["Uraian Kejadian", "Waktu Kebakaran", "Kerusakan", "Tindakan"]
+        vars_map = {}
+        for f in fields:
+            rowf = ttk.Frame(frm)
+            rowf.pack(fill="x", pady=4)
+            ttk.Label(rowf, text=f"{f} ->", width=20).pack(side="left")
+            v = tk.StringVar(value=self.display_labels.get(f, f))
+            vars_map[f] = v
+            ttk.Entry(rowf, textvariable=v, width=50).pack(side="left", fill="x", expand=True)
+
+        btn_frame = ttk.Frame(frm)
+        btn_frame.pack(fill="x", pady=(12,0))
+
+        def do_save_settings():
+            new_sub = subtitle_var.get().strip()
+            new_field_labels = {k: vars_map[k].get().strip() or k for k in fields}
+            # collect kop lines
+            try:
+                new_kop_lines = [kop_vars[i].get().strip() for i in range(len(kop_vars))]
+            except Exception:
+                new_kop_lines = DEFAULT_USER_SETTINGS.get('kop_lines', [])
+
+            settings = {
+                'report_subtitle': new_sub,
+                'field_labels': new_field_labels,
+                'kop_lines': new_kop_lines,
+            }
+            try:
+                save_user_settings(self.username, settings)
+            except Exception as e:
+                messagebox.showerror("Error", f"Gagal menyimpan pengaturan: {e}")
+                return
+
+            # apply to UI
+            self.report_subtitle = new_sub
+            self.kop_lines = settings.get('kop_lines', DEFAULT_USER_SETTINGS.get('kop_lines', []))
+            self.display_labels.update(new_field_labels)
+            self.display_to_key = {v: k for k, v in self.display_labels.items()}
+
+            try:
+                self.header_subtitle_label.config(text=self.report_subtitle)
+            except Exception:
+                pass
+
+            # update mid labels
+            for k, lbl in self.mid_labels.items():
+                try:
+                    lbl.config(text=self.display_labels.get(k, k) + ":")
+                except Exception:
+                    pass
+
+            # update tree headings
+            for c in COLUMNS:
+                try:
+                    self.tree.heading(c, text=self.display_labels.get(c, c))
+                except Exception:
+                    pass
+
+            # update filter combobox values
+            try:
+                new_vals = [self.display_labels.get(c, c) for c in COLUMNS]
+                self.filter_col['values'] = new_vals
+                self.filter_col.set(self.display_labels.get('Nama', 'Nama'))
+            except Exception:
+                pass
+
+            messagebox.showinfo("Sukses", "Pengaturan tersimpan.")
+            win.destroy()
+
+        ttk.Button(btn_frame, text="Simpan", command=do_save_settings).pack(side="right", padx=6)
+        ttk.Button(btn_frame, text="Batal", command=win.destroy).pack(side="right")
 
     # ---------------- Validations 
     
@@ -1229,17 +1397,19 @@ class LaporanApp:
         detail_frame.grid(row=2, column=0, sticky="nsew", pady=(15, 0))
         detail_frame.grid_columnconfigure(1, weight=1)
         
-        fields_detail = [("Uraian Kejadian:", "Uraian Kejadian", 0, 4),
-                        ("Waktu Kebakaran:", "Waktu Kebakaran", 1, 2),
-                        ("Kerusakan:", "Kerusakan", 2, 4),
-                        ("Tindakan:", "Tindakan", 3, 4)]
-        
-        for i, (lbl_txt, data_key, row_idx, height) in enumerate(fields_detail):
+        # Use display labels for the detail section
+        fields_detail_keys = ["Uraian Kejadian", "Waktu Kebakaran", "Kerusakan", "Tindakan"]
+        # default heights for each field (matching previous UI)
+        detail_heights = [4, 2, 4, 4]
+
+        for row_idx, data_key in enumerate(fields_detail_keys):
+            lbl_txt = self.display_labels.get(data_key, data_key) + ":"
             ttk.Label(detail_frame, text=lbl_txt, style="Preview.TLabel", font=("Segoe UI", 10, "bold")).grid(row=row_idx, column=0, sticky="nw", padx=(0, 10), pady=(5, 0))
             
             txt_container = ttk.Frame(detail_frame)
             txt_container.grid(row=row_idx, column=1, sticky="nsew", padx=(0, 15), pady=(5, 10))
             
+            height = detail_heights[row_idx] if row_idx < len(detail_heights) else 3
             txt = tk.Text(txt_container, width=1, height=height, wrap="word", relief="flat", borderwidth=1, state="disabled")
             txt.pack(fill="both", expand=True)
             
@@ -1330,12 +1500,12 @@ class LaporanApp:
     def _perform_tambah_laporan(self, data):
         """Logika penyimpanan data setelah konfirmasi."""
 
-        df = load_data()
+        df = load_data(self.excel_file)
         row_to_add = {c: data.get(c, "") for c in COLUMNS}
         
         # Gunakan pd.concat yang lebih modern daripada df.append
         df = pd.concat([df, pd.DataFrame([row_to_add], columns=COLUMNS)], ignore_index=True)
-        save_data(df)
+        save_data(df, self.excel_file)
         
 
 
@@ -1355,14 +1525,14 @@ class LaporanApp:
             return
 
         idx = int(sel[0])
-        df = load_data()
+        df = load_data(self.excel_file)
         
         if idx < 0 or idx >= len(df):
             messagebox.showerror("Error", "Indeks tidak valid.")
             return
 
         df = df.drop(index=df.index[idx]).reset_index(drop=True)
-        save_data(df)
+        save_data(df, self.excel_file)
         
         self.tampilkan_data()
         messagebox.showinfo("Sukses", "Laporan dihapus.")
@@ -1375,7 +1545,7 @@ class LaporanApp:
             return
             
         idx = int(sel[0])
-        df = load_data()
+        df = load_data(self.excel_file)
         
         if idx < 0 or idx >= len(df):
             messagebox.showerror("Error", "Indeks tidak valid.")
@@ -1406,7 +1576,7 @@ class LaporanApp:
 
     def _perform_edit_laporan(self, idx, new_data):
         """Logika update data setelah konfirmasi."""
-        df = load_data()
+        df = load_data(self.excel_file)
         
         df_index_to_update = df.index[idx]
         
@@ -1415,7 +1585,7 @@ class LaporanApp:
                 df[k] = ""
             df.at[df_index_to_update, k] = v
             
-        save_data(df)
+        save_data(df, self.excel_file)
         
         self.tampilkan_data()
         messagebox.showinfo("Sukses", "Laporan diperbarui.")
@@ -1456,7 +1626,7 @@ class LaporanApp:
             return
             
         idx = int(sel[0])
-        df = load_data()
+        df = load_data(self.excel_file)
         
         if idx < 0 or idx >= len(df):
             return
@@ -1468,8 +1638,10 @@ class LaporanApp:
     # ... (Tidak ada perubahan di sini)
     def apply_filter(self):
         """Menerapkan filter keyword dan/atau tanggal."""
-        df = load_data()
-        col = self.filter_col.get().strip()
+        df = load_data(self.excel_file)
+        # Filter combobox contains display labels; map back to internal column key
+        col_display = self.filter_col.get().strip()
+        col = self.display_to_key.get(col_display, col_display)
         kw = self.filter_kw.get().strip().lower()
         df_filtered = df.copy()
 
@@ -1530,7 +1702,7 @@ class LaporanApp:
         self.filter_kw.delete(0, "end")
         self.date_from.delete(0, "end")
         self.date_to.delete(0, "end")
-        self.filter_col.set("Nama")
+        self.filter_col.set(self.display_labels.get("Nama", "Nama"))
         self.tampilkan_data()
 
     # ---------------- Exports ---------------
@@ -1542,7 +1714,7 @@ class LaporanApp:
             messagebox.showwarning("Peringatan", "Pilih baris yang akan di-export.")
             return
 
-        df = load_data().reset_index(drop=True)
+        df = load_data(self.excel_file).reset_index(drop=True)
         idx = int(sel[0])
         
         if idx < 0 or idx >= len(df):
@@ -1574,7 +1746,7 @@ class LaporanApp:
 
     def export_all_single_pdf(self):
         """Export semua data ke satu file PDF tunggal."""
-        df = load_data()
+        df = load_data(self.excel_file)
         if df.empty:
             messagebox.showwarning("Kosong", "Tidak ada data untuk di-export.")
             return
@@ -1588,7 +1760,7 @@ class LaporanApp:
 
     def export_all_multiple_pdfs(self):
         """Export semua data ke file PDF terpisah per baris."""
-        df = load_data()
+        df = load_data(self.excel_file)
         if df.empty:
             messagebox.showwarning("Kosong", "Tidak ada data untuk di-export.")
             return
@@ -1602,7 +1774,7 @@ class LaporanApp:
 
     def export_all_excel(self):
         """Export semua data ke file Excel."""
-        df = load_data()
+        df = load_data(self.excel_file)
         if df.empty:
             messagebox.showwarning("Kosong", "Tidak ada data untuk di-export.")
             return
@@ -1649,7 +1821,13 @@ class LaporanApp:
             # Pastikan direktori tujuan ada
             os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
             
-            df_export.to_excel(out_path, index=False, engine="openpyxl")
+            # Rename columns for export to show user display labels
+            try:
+                df_export_renamed = df_export.rename(columns=self.display_labels)
+            except Exception:
+                df_export_renamed = df_export
+
+            df_export_renamed.to_excel(out_path, index=False, engine="openpyxl")
             loading_window.destroy()
             messagebox.showinfo("Sukses", f"Excel dibuat: {out_path}")
         except Exception as e:
@@ -1666,252 +1844,336 @@ class LaporanApp:
             except Exception:
                 os._exit(0)
 
+    def switch_user(self):
+        """Berganti pengguna dengan membuka ulang window login."""
+        if messagebox.askyesno("Tukar Pengguna", "Yakin ingin berganti pengguna?"):
+            try:
+                # Destroy current window
+                self.root.destroy()
+                # Open new login window
+                LoginWindow()
+            except Exception:
+                os._exit(0)
+
 # ---------------- main----
 
 class SetupPasswordWindow:
-    def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("Setup Password - Aplikasi Laporan E-Kinerja")
-        self.root.geometry("400x400")
-        
+    """Registration window for first-run: create a username and password.
+
+    If `parent` is provided, a modal Toplevel is used so this can be opened
+    from the login window to create additional users without starting a new
+    mainloop or new root Tk instance.
+    """
+    def __init__(self, parent=None):
+        self.parent = parent
+        if parent:
+            # Use Toplevel so it's modal on top of the login window
+            self.root = tk.Toplevel(parent)
+            # make modal-ish
+            self.root.transient(parent)
+            self.root.grab_set()
+        else:
+            self.root = tk.Tk()
+
+        self.root.title("Buat Akun - Aplikasi Laporan E-Kinerja")
+        self.root.geometry("420x460")
+
         # Center window
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        x = (screen_width - 400) // 2
-        y = (screen_height - 400) // 2
-        self.root.geometry(f"400x400+{x}+{y}")
-        
+        x = (screen_width - 420) // 2
+        y = (screen_height - 460) // 2
+        self.root.geometry(f"420x460+{x}+{y}")
+
         self.create_setup_ui()
         
     def create_setup_ui(self):
         style = ttk.Style()
         style.theme_use('clam')
         
-        main_frame = ttk.Frame(self.root, padding="20")
+        main_frame = ttk.Frame(self.root, padding="18")
         main_frame.pack(fill="both", expand=True)
         
-        # Title
-        title_label = ttk.Label(main_frame, 
-                              text="SELAMAT DATANG", 
-                              font=("Segoe UI", 16, "bold"))
-        title_label.pack(pady=(0, 5))
-        
-        # Subtitle
-        subtitle_label = ttk.Label(main_frame, 
-                                 text="Ini adalah pertama kali Anda menjalankan aplikasi.\nSilakan buat password untuk mengamankan data Anda.", 
-                                 font=("Segoe UI", 10),
-                                 justify="center")
-        subtitle_label.pack(pady=(0, 20))
-        
-        # Password Frame
-        password_frame = ttk.Frame(main_frame)
-        password_frame.pack(fill="x", pady=10)
-        
-        # Password Entry
-        ttk.Label(password_frame, text="Password Baru:", font=("Segoe UI", 10)).pack(pady=(0,5))
+        title_label = ttk.Label(main_frame, text="SELAMAT DATANG", font=("Segoe UI", 16, "bold"))
+        title_label.pack(pady=(0, 8))
+
+        subtitle = "Ini adalah pertama kali Anda menjalankan aplikasi.\nBuat akun pengguna (username & password)."
+        subtitle_label = ttk.Label(main_frame, text=subtitle, font=("Segoe UI", 10), justify="center")
+        subtitle_label.pack(pady=(0, 12))
+
+        # Username
+        ttk.Label(main_frame, text="Username (unik):", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        self.username_var = tk.StringVar()
+        self.username_entry = ttk.Entry(main_frame, textvariable=self.username_var, width=36)
+        self.username_entry.pack(pady=(0,6))
+
+        # Full name (optional)
+        ttk.Label(main_frame, text="Nama Lengkap (opsional):", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        self.fullname_var = tk.StringVar()
+        self.fullname_entry = ttk.Entry(main_frame, textvariable=self.fullname_var, width=36)
+        self.fullname_entry.pack(pady=(0,6))
+
+        # Password
+        ttk.Label(main_frame, text="Password (min 6):", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
         self.password_var = tk.StringVar()
-        self.password_entry = ttk.Entry(password_frame, 
-                                      textvariable=self.password_var, 
-                                      show="●",
-                                      width=30)
-        self.password_entry.pack(pady=5)
-        
-        # Confirm Password Entry
-        ttk.Label(password_frame, text="Konfirmasi Password:", font=("Segoe UI", 10)).pack(pady=(10,5))
+        self.password_entry = ttk.Entry(main_frame, textvariable=self.password_var, show="●", width=36)
+        self.password_entry.pack(pady=(0,6))
+
+        # Confirm
+        ttk.Label(main_frame, text="Konfirmasi Password:", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
         self.confirm_var = tk.StringVar()
-        self.confirm_entry = ttk.Entry(password_frame, 
-                                     textvariable=self.confirm_var, 
-                                     show="●",
-                                     width=30)
-        self.confirm_entry.pack(pady=5)
-        
-        # Show/Hide Password Checkbox
+        self.confirm_entry = ttk.Entry(main_frame, textvariable=self.confirm_var, show="●", width=36)
+        self.confirm_entry.pack(pady=(0,8))
+
+        # Show checkbox
         self.show_password = tk.BooleanVar()
-        show_password_cb = ttk.Checkbutton(password_frame, 
-                                         text="Tampilkan Password",
-                                         variable=self.show_password,
-                                         command=self.toggle_password_visibility)
-        show_password_cb.pack(pady=10)
-        
-        # Setup Button
-        setup_button = ttk.Button(main_frame, 
-                                text="Buat Password",
-                                command=self.save_password,
-                                style="Accent.TButton")
-        setup_button.pack(pady=20)
-        
-        # Status Label
-        self.status_label = ttk.Label(main_frame, 
-                                     text="",
-                                     foreground="red",
-                                     justify="center",
-                                     wraplength=300)
-        self.status_label.pack(pady=5)
-        
-        # Info Label
-        info_label = ttk.Label(main_frame,
-                              text="Password ini akan digunakan setiap kali\nAnda membuka aplikasi.",
-                              justify="center",
-                              font=("Segoe UI", 9))
-        info_label.pack(pady=(10,0))
-        
-        # Bind enter key
-        self.password_entry.bind('<Return>', lambda e: self.confirm_entry.focus())
-        self.confirm_entry.bind('<Return>', lambda e: self.save_password())
-        
-        # Focus password entry
-        self.password_entry.focus()
-        
+        show_password_cb = ttk.Checkbutton(main_frame, text="Tampilkan Password", variable=self.show_password, command=self.toggle_password_visibility)
+        show_password_cb.pack(anchor="w", pady=(0,8))
+
+        # Buttons
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(fill="x", pady=(8,0))
+
+        setup_button = ttk.Button(btn_frame, text="Buat Akun", command=self.save_account, style="Accent.TButton")
+        setup_button.pack(side="left", padx=(0,6))
+
+        cancel_button = ttk.Button(btn_frame, text="Batal", command=lambda: self.root.destroy())
+        cancel_button.pack(side="left")
+
+        # Status
+        self.status_label = ttk.Label(main_frame, text="", foreground="red", wraplength=360, justify="center")
+        self.status_label.pack(pady=(12,0))
+
+        self.username_entry.focus()
+
     def toggle_password_visibility(self):
-        """Toggle password visibility"""
         show = "" if self.show_password.get() else "●"
         self.password_entry.config(show=show)
         self.confirm_entry.config(show=show)
-            
-    def save_password(self):
-        """Save the new password"""
+
+    def save_account(self):
+        username = self.username_var.get().strip()
+        fullname = self.fullname_var.get().strip()
         password = self.password_var.get()
         confirm = self.confirm_var.get()
-        
-        if not password:
-            self.status_label.config(text="Password tidak boleh kosong!")
+
+        if not username:
+            self.status_label.config(text="Username tidak boleh kosong")
             return
-            
-        if len(password) < 6:
-            self.status_label.config(text="Password harus minimal 6 karakter!")
+        if user_exists(username):
+            self.status_label.config(text="Username sudah terpakai. Pilih username lain.")
             return
-            
+        if not password or len(password) < 6:
+            self.status_label.config(text="Password minimal 6 karakter")
+            return
         if password != confirm:
-            self.status_label.config(text="Password dan konfirmasi tidak cocok!")
+            self.status_label.config(text="Password dan konfirmasi tidak cocok")
             return
-            
+
         try:
-            ensure_base_dir(CRED_FILE)
-            with open(CRED_FILE, 'w') as f:
-                json.dump({"password": password}, f)
-                
-            self.root.destroy()  # Close setup window
-            LoginWindow()  # Show login window
-            
+            add_user(username, password, full_name=fullname)
+            # Inform and close. If opened as Toplevel (parent given), simply close
+            # and return to the existing login window. Otherwise, open login.
+            messagebox.showinfo("Sukses", f"Akun '{username}' berhasil dibuat. Silakan login.")
+            self.root.destroy()
+            if not self.parent:
+                # Only create a new LoginWindow when this was the initial standalone
+                # setup (no parent). If parent exists, the caller (login window)
+                # remains active.
+                LoginWindow()
+            else:
+                try:
+                    # try to focus back to parent window
+                    self.parent.deiconify()
+                    self.parent.focus_force()
+                except Exception:
+                    pass
         except Exception as e:
-            self.status_label.config(text=f"Error menyimpan password: {str(e)}")
+            self.status_label.config(text=f"Gagal membuat akun: {e}")
 
 class LoginWindow:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Login - Aplikasi Laporan E-Kinerja")
-        self.root.geometry("400x300")
-        
-        # Center window
+        self.root.geometry("420x340")
+
+        # Center
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        x = (screen_width - 400) // 2
-        y = (screen_height - 300) // 2
-        self.root.geometry(f"400x300+{x}+{y}")
-        
+        x = (screen_width - 420) // 2
+        y = (screen_height - 340) // 2
+        self.root.geometry(f"420x340+{x}+{y}")
+
         self.create_login_ui()
-        
+
     def create_login_ui(self):
-        # Style
         style = ttk.Style()
         style.theme_use('clam')
         
-        # Main Frame
-        main_frame = ttk.Frame(self.root, padding="20")
+        # Add link style for forgot password button
+        style.configure("Link.TButton", foreground="blue", background=style.lookup("TFrame", "background"))
+        style.map("Link.TButton",
+                 foreground=[("active", "dark blue"), ("disabled", "gray")],
+                 background=[("active", style.lookup("TFrame", "background"))])
+
+        main_frame = ttk.Frame(self.root, padding="18")
         main_frame.pack(fill="both", expand=True)
-        
-        # Title
-        title_label = ttk.Label(main_frame, 
-                              text="APLIKASI E-KINERJA ASN", 
-                              font=("Segoe UI", 16, "bold"))
-        title_label.pack(pady=(0, 20))
-        
-        # Subtitle
-        subtitle_label = ttk.Label(main_frame, 
-                                 text="Silakan Masukkan Password", 
-                                 font=("Segoe UI", 10))
-        subtitle_label.pack(pady=(0, 20))
-        
-        # Password Frame
-        password_frame = ttk.Frame(main_frame)
-        password_frame.pack(fill="x", pady=10)
-        
-        # Password Entry
+
+        title_label = ttk.Label(main_frame, text="APLIKASI E-KINERJA ASN", font=("Segoe UI", 14, "bold"))
+        title_label.pack(pady=(0, 10))
+
+        ttk.Label(main_frame, text="Username:", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        self.username_var = tk.StringVar()
+        self.username_entry = ttk.Entry(main_frame, textvariable=self.username_var, width=36)
+        self.username_entry.pack(pady=(0,6))
+
+        ttk.Label(main_frame, text="Password:", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
         self.password_var = tk.StringVar()
-        self.password_entry = ttk.Entry(password_frame, 
-                                      textvariable=self.password_var, 
-                                      show="●",
-                                      width=30)
-        self.password_entry.pack(pady=5)
-        
-        # Show/Hide Password Checkbox
+        self.password_entry = ttk.Entry(main_frame, textvariable=self.password_var, show="●", width=36)
+        self.password_entry.pack(pady=(0,6))
+
+        # Show/Hide
         self.show_password = tk.BooleanVar()
-        show_password_cb = ttk.Checkbutton(password_frame, 
-                                         text="Tampilkan Password",
-                                         variable=self.show_password,
-                                         command=self.toggle_password_visibility)
-        show_password_cb.pack(pady=5)
-        
-        # Login Button
-        login_button = ttk.Button(main_frame, 
-                                text="Login",
-                                command=self.validate_login,
-                                style="Accent.TButton")
-        login_button.pack(pady=20)
-        
-        # Status Label
-        self.status_label = ttk.Label(main_frame, 
-                                     text="",
-                                     foreground="red")
-        self.status_label.pack(pady=5)
-        
-        # Bind enter key
+        show_password_cb = ttk.Checkbutton(main_frame, text="Tampilkan Password", variable=self.show_password, command=self.toggle_password_visibility)
+        show_password_cb.pack(anchor="w", pady=(0,6))
+
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(fill="x", pady=(8,0))
+
+        login_button = ttk.Button(btn_frame, text="Login", command=self.validate_login, style="Accent.TButton")
+        login_button.pack(side="left", padx=(0,6))
+
+        register_button = ttk.Button(btn_frame, text="Daftar Baru", command=self.open_register)
+        register_button.pack(side="left")
+
+        # Add Forgot Password link-style button
+        forgot_button = ttk.Button(main_frame, text="Lupa Password?", command=self.open_forgot_password, style="Link.TButton")
+        forgot_button.pack(pady=(10,0))
+
+        self.status_label = ttk.Label(main_frame, text="", foreground="red", wraplength=360)
+        self.status_label.pack(pady=(10,0))
+
         self.password_entry.bind('<Return>', lambda e: self.validate_login())
-        
-        # Focus password entry
-        self.password_entry.focus()
-        
+        self.username_entry.focus()
+
     def toggle_password_visibility(self):
-        """Toggle password visibility"""
         if self.show_password.get():
             self.password_entry.config(show="")
         else:
             self.password_entry.config(show="●")
-            
-    def validate_login(self):
-        """Validate the entered password"""
-        entered_password = self.password_var.get()
-        
-        try:
-            ensure_base_dir(CRED_FILE)  # Pastikan direktori ada
-            if not os.path.exists(CRED_FILE):
-                # Jika file credentials belum ada, buat dengan password default
-                with open(CRED_FILE, 'w') as f:
-                    json.dump({"password": "Sneijderlino2023"}, f)
 
-            with open(CRED_FILE, 'r') as f:
-                credentials = json.load(f)
-            
-            if entered_password == credentials.get('password'):
-                self.root.destroy()  # Close login window
-                self.launch_main_app()  # Launch main application
+    def open_register(self):
+        # Open registration window to add more users (modal)
+        SetupPasswordWindow(parent=self.root)
+
+    def validate_login(self):
+        username = self.username_var.get().strip()
+        password = self.password_var.get()
+
+        if not username or not password:
+            self.status_label.config(text="Masukkan username dan password")
+            return
+
+        try:
+            if verify_user(username, password):
+                self.root.destroy()
+                self.launch_main_app(username)
             else:
-                self.status_label.config(text="Password salah! Silakan coba lagi.")
+                self.status_label.config(text="Username atau password salah")
                 self.password_entry.delete(0, 'end')
         except Exception as e:
-            self.status_label.config(text="Error: Gagal memvalidasi password!")
-            print(f"Login error: {e}")
+            self.status_label.config(text="Error saat proses login")
+            print("Login error:", e)
+
+    def open_forgot_password(self):
+        # Create forgot password window
+        forgot_window = tk.Toplevel(self.root)
+        forgot_window.title("Reset Password")
+        forgot_window.geometry("400x300")
+
+        # Center the window
+        screen_width = forgot_window.winfo_screenwidth()
+        screen_height = forgot_window.winfo_screenheight()
+        x = (screen_width - 400) // 2
+        y = (screen_height - 300) // 2
+        forgot_window.geometry(f"400x300+{x}+{y}")
+        
+        forgot_window.transient(self.root)
+        forgot_window.grab_set()
+
+        # Create UI elements
+        main_frame = ttk.Frame(forgot_window, padding="18")
+        main_frame.pack(fill="both", expand=True)
+
+        ttk.Label(main_frame, text="Reset Password", font=("Segoe UI", 14, "bold")).pack(pady=(0, 10))
+
+        # Username input
+        ttk.Label(main_frame, text="Username:", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        username_var = tk.StringVar()
+        username_entry = ttk.Entry(main_frame, textvariable=username_var, width=36)
+        username_entry.pack(pady=(0,6))
+
+        # Full name input
+        ttk.Label(main_frame, text="Nama Lengkap:", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        fullname_var = tk.StringVar()
+        fullname_entry = ttk.Entry(main_frame, textvariable=fullname_var, width=36)
+        fullname_entry.pack(pady=(0,6))
+
+        # New password
+        ttk.Label(main_frame, text="Password Baru (min 6):", font=("Segoe UI", 10)).pack(anchor="w", pady=(6,2))
+        new_password_var = tk.StringVar()
+        new_password_entry = ttk.Entry(main_frame, textvariable=new_password_var, show="●", width=36)
+        new_password_entry.pack(pady=(0,6))
+
+        # Status label
+        status_label = ttk.Label(main_frame, text="", foreground="red", wraplength=360)
+        status_label.pack(pady=(10,0))
+
+        def do_reset_password():
+            username = username_var.get().strip()
+            fullname = fullname_var.get().strip()
+            new_password = new_password_var.get()
+
+            if not username or not fullname or not new_password:
+                status_label.config(text="Semua field harus diisi")
+                return
+
+            if len(new_password) < 6:
+                status_label.config(text="Password baru minimal 6 karakter")
+                return
+
+            if not user_exists(username):
+                status_label.config(text="Username tidak ditemukan")
+                return
+
+            if not verify_full_name(username, fullname):
+                status_label.config(text="Nama lengkap tidak sesuai dengan data registrasi")
+                return
+
+            try:
+                reset_password(username, new_password)
+                messagebox.showinfo("Sukses", "Password berhasil direset. Silakan login dengan password baru.")
+                forgot_window.destroy()
+            except Exception as e:
+                status_label.config(text=f"Gagal reset password: {str(e)}")
+
+        # Reset button
+        reset_button = ttk.Button(main_frame, text="Reset Password", command=do_reset_password, style="Accent.TButton")
+        reset_button.pack(pady=(10,0))
+
+    def launch_main_app(self, username=None):
+        if not username:
+            messagebox.showerror("Error", "Username tidak valid")
+            return
             
-    def launch_main_app(self):
-        """Launch the main application after successful login"""
         root = tk.Tk()
         try:
             style = ttk.Style(root)
             style.theme_use('clam')
         except Exception:
             pass
-        
-        app = LaporanApp(root)
+
+        app = LaporanApp(root, username)
         root.mainloop()
 
 def main():
@@ -1923,14 +2185,18 @@ def main():
         
         if missing:
             print(f"PERINGATAN: Library berikut tidak terinstal dan fungsionalitas terkait akan dinonaktifkan: {', '.join(missing)}")
-    
-    # Check if credentials exist
-    if not os.path.exists(CRED_FILE):
-        # First time setup
-        setup_window = SetupPasswordWindow()
-        setup_window.root.mainloop()
-    else:
-        # Normal login
+
+    # If no users exist yet, open registration; otherwise open login
+    try:
+        if not ensure_has_any_user():
+            setup_window = SetupPasswordWindow()
+            setup_window.root.mainloop()
+        else:
+            login_window = LoginWindow()
+            login_window.root.mainloop()
+    except Exception as e:
+        # Fallback: open login
+        print("Error saat inisialisasi user store:", e)
         login_window = LoginWindow()
         login_window.root.mainloop()
 

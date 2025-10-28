@@ -5,7 +5,7 @@
 # 🏢 APLIKASI LAPORAN E-KINERJA
 
 [![License](https://img.shields.io/github/license/Sneijderlino/Aplikasi-Laporan-eKINERJA?style=for-the-badge&color=2ecc71)](LICENSE)
-[![Python Version](https://img.shields.io/badge/Python-3.8+-3776AB.svg?style=for-the-badge&logo=python)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=for-the-badge&logo=python)](https://www.python.org/)
 [![CI](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/actions/workflows/python-app.yml/badge.svg)](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/actions)
 [![OS Support](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-informational?style=for-the-badge)](https://www.python.org/)
 
@@ -17,30 +17,36 @@ _Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pe
 
 ## ✨ Fitur Utama
 
-- _GUI Profesional:_ Antarmuka pengguna grafis (GUI) yang bersih dan terstruktur menggunakan _Tkinter_ dan theme clam.
-- _Penyimpanan Data:_ Menggunakan file **laporan_asn.xlsx** (Excel) sebagai database utama dan **identitas_asn.json** untuk menyimpan data identitas ASN.
-- _Identitas Persisten:_ Data Nama, NIP, Jabatan, dan Unit Kerja ASN disimpan dan dikunci secara otomatis setelah entri pertama.
-- _Dukungan Multimedia:_ Menyertakan _Pillow_ untuk upload dan preview foto di form input.
-- _Export Serbaguna:_ Mampu mengekspor laporan ke format _Excel (.xlsx)_ dan _PDF (.pdf)_ (tunggal dan banyak file).
-- _Operasi CRUD:_ Mendukung operasi Tambah, Ubah, dan Hapus (CRUD) laporan.
+- _Modern GUI:_ Antarmuka pengguna grafis (GUI) yang modern dan responsif menggunakan _CustomTkinter_ dengan tema yang menarik.
+- _Penyimpanan Data Terpadu:_ Menggunakan file **laporan_asn.xlsx** (Excel) sebagai database utama dan **identitas_asn.json** untuk menyimpan data identitas ASN dengan validasi data.
+- _Identitas Persisten:_ Data Nama, NIP, Jabatan, dan Unit Kerja ASN disimpan dan dikunci secara otomatis dengan enkripsi data sensitif.
+- _Dukungan Multimedia:_ Menyertakan _Pillow_ untuk upload, preview, dan optimasi foto di form input.
+- _Export Multi-Format:_ Mampu mengekspor laporan ke format _Excel (.xlsx)_ dan _PDF (.pdf)_ dengan template yang dapat disesuaikan.
+- _Operasi CRUD Lengkap:_ Mendukung operasi Tambah, Ubah, dan Hapus (CRUD) laporan dengan validasi data.
+- _Backup & Restore:_ Fitur backup otomatis dan kemampuan restore data.
 
 ## ⚙ Prasyarat Sistem & Dependensi
 
 ### A. Dependensi Python
 
-Aplikasi ini membutuhkan library berikut. Beberapa di antaranya bersifat _opsional_ (tapi sangat disarankan) untuk fungsionalitas penuh.
+Aplikasi ini membutuhkan library berikut untuk fungsionalitas penuh:
 
-| Library    | Kegunaan                                                       | Wajib?   |
-| :--------- | :------------------------------------------------------------- | :------- |
-| _pandas_   | Pengolahan dan penyimpanan data ke/dari Excel.                 | YA       |
-| _openpyxl_ | Mesin backend untuk Pandas & fitur penyisipan gambar ke Excel. | YA       |
-| _Pillow_   | Manajemen gambar (upload & preview foto).                      | Opsional |
-| _fpdf_     | Pembuatan laporan dalam format PDF.                            | Opsional |
+| Library         | Kegunaan                                                       | Versi Min. |
+| :-------------- | :------------------------------------------------------------- | :--------- |
+| _pandas_        | Pengolahan dan penyimpanan data ke/dari Excel.                 | 2.1.0      |
+| _openpyxl_      | Mesin backend untuk Pandas & fitur penyisipan gambar ke Excel. | 3.1.2      |
+| _customtkinter_ | Framework GUI modern dengan tema yang menarik.                 | 5.2.0      |
+| _Pillow_        | Manajemen dan optimasi gambar.                                 | 10.0.0     |
+| _fpdf_          | Pembuatan laporan dalam format PDF.                            | 1.7.2      |
+| _xlsxwriter_    | Pemformatan Excel lanjutan dan templating.                     | 3.1.2      |
 
 ### B. Prasyarat Sistem
 
-- _Python 3.8+_
+- _Python 3.11+_
 - _Git_
+- Minimum 4GB RAM
+- 500MB ruang disk
+- Resolusi layar minimum 1366x768
 
 ---
 
@@ -102,7 +108,6 @@ Kamu juga dapat langsung _mengunduh file aplikasi yang sudah jadi_ melalui halam
 
 - Cari bagian _“Assets”_ di bawah rilis tersebut.
 - Klik file .zip ATAU .tar.gz untuk mengunduhnya ke perangkatmu.
-
 
 ### 🖥 Langkah 3: Ekstrak & Jalankan
 
