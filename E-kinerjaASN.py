@@ -154,6 +154,18 @@ def get_previous_month_date(date_obj=None):
 
 # ----------------- Custom Time Formatting (NEW!) ------------------------
 
+def get_bulan_indonesia(date_obj=None):
+    """Mengkonversi nama bulan ke Bahasa Indonesia."""
+    if date_obj is None:
+        date_obj = get_previous_month_date()
+        
+    bulan_indo = {
+        1: "JANUARI", 2: "FEBRUARI", 3: "MARET", 4: "APRIL",
+        5: "MEI", 6: "JUNI", 7: "JULI", 8: "AGUSTUS",
+        9: "SEPTEMBER", 10: "OKTOBER", 11: "NOVEMBER", 12: "DESEMBER"
+    }
+    return bulan_indo[date_obj.month]
+
 def get_current_time_display():
     """Mengambil waktu saat ini dan memformatnya sebagai HH:MM WIT."""
     # Contoh: 10:55 WIT
@@ -323,47 +335,130 @@ class LaporanApp:
         root.grid_rowconfigure(3, weight=1)    
         root.grid_columnconfigure(0, weight=1)
         
-        # --- TEMA/STYLING PROFESIONAL --------
+        # --- TEMA/STYLING PROFESIONAL (Dark, blue->black gradient) --------
         style = ttk.Style()
         style.theme_use('clam')
-        
-        # WARNA
-        self.PRIMARY_COLOR = "#5D4AA0"
-        self.ACCENT_COLOR = "#785BB8"
-        self.LIGHT_BG = "#F4F4F9"
-        self.DARK_TEXT = "#333333"
-        self.WHITE_TEXT = "white"
-        
-        root.configure(bg=self.LIGHT_BG)
 
-        # Style Header (Tidak ada perubahan)
+        # WARNA (Dark professional palette)
+        # Gradient will go from GRAD_TOP (blue) to GRAD_BOTTOM (black)
+        self.GRAD_TOP = "#0B3D91"      # deep blue
+        self.GRAD_BOTTOM = "#000000"   # black
+        self.PRIMARY_COLOR = self.GRAD_TOP
+        self.ACCENT_COLOR = "#1E90FF"  # bright accent blue
+        self.FRAME_BG = "#0b0f17"      # near-black bluish for frames
+        self.LIGHT_BG = self.FRAME_BG
+        self.DARK_TEXT = "#E6F0FF"     # very light text with blue tint
+        self.WHITE_TEXT = "#FFFFFF"
+
+        # Set root base bg to the dark frame background
+        try:
+            root.configure(bg=self.LIGHT_BG)
+        except Exception:
+            pass
+
+        # If Pillow available, prepare a dynamic gradient background that resizes
+        # We'll place a Label with the generated image behind other widgets.
+        def _draw_gradient_bg(w, h):
+            # Fast gradient generator: create a 1 x h vertical gradient then resize to w x h.
+            if not PIL_AVAILABLE:
+                return None
+            try:
+                h = max(1, int(h))
+                w = max(1, int(w))
+                # create 1xh image and set pixels per row (cheaper than w*h loop)
+                im1 = Image.new('RGB', (1, h))
+                top_rgb = tuple(int(self.GRAD_TOP.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+                bot_rgb = tuple(int(self.GRAD_BOTTOM.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+                for y in range(h):
+                    ratio = y / max(1, h - 1)
+                    r = int(top_rgb[0] * (1 - ratio) + bot_rgb[0] * ratio)
+                    g = int(top_rgb[1] * (1 - ratio) + bot_rgb[1] * ratio)
+                    b = int(top_rgb[2] * (1 - ratio) + bot_rgb[2] * ratio)
+                    im1.putpixel((0, y), (r, g, b))
+                # resize horizontally to full width (fast) and convert to PhotoImage
+                try:
+                    im = im1.resize((w, h), Image.Resampling.LANCZOS)
+                except Exception:
+                    im = im1.resize((w, h))
+                return ImageTk.PhotoImage(im)
+            except Exception:
+                return None
+
+        # Create background label and attach to root
+        self._bg_label = tk.Label(root)
+        self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Keep a reference to the PhotoImage
+        self._bg_photo = None
+
+        # Debounced configure handler: avoid regenerating gradient on every small resize
+        self._bg_after_id = None
+
+        def _do_generate():
+            try:
+                w = max(1, root.winfo_width())
+                h = max(1, root.winfo_height())
+                img = _draw_gradient_bg(w, h)
+                if img:
+                    self._bg_photo = img
+                    self._bg_label.config(image=self._bg_photo)
+                else:
+                    self._bg_label.config(bg=self.LIGHT_BG)
+            except Exception:
+                try:
+                    self._bg_label.config(bg=self.LIGHT_BG)
+                except Exception:
+                    pass
+            finally:
+                self._bg_after_id = None
+
+        def _on_root_configure(event=None):
+            try:
+                # cancel previous scheduled generation
+                if getattr(self, '_bg_after_id', None):
+                    try:
+                        root.after_cancel(self._bg_after_id)
+                    except Exception:
+                        pass
+                # schedule new generation after short delay (debounce)
+                self._bg_after_id = root.after(120, _do_generate)
+            except Exception:
+                pass
+
+        root.bind('<Configure>', _on_root_configure)
+
+        # Initialize background once after startup (small delay)
+        root.after(150, _do_generate)
+
+        # Style Header - use deep blue header with light text
         style.configure("Header.TFrame", background=self.PRIMARY_COLOR)
         style.configure("Header.TLabel", background=self.PRIMARY_COLOR, foreground=self.WHITE_TEXT, font=("Segoe UI", 16, "bold"))
         style.configure("SubHeader.TLabel", background=self.PRIMARY_COLOR, foreground=self.WHITE_TEXT, font=("Segoe UI", 12))
-        
-        # Style Frame Input (Tidak ada perubahan)
-        style.configure("Form.TFrame", background=self.LIGHT_BG)
-        style.configure("FormLabel.TLabel", background=self.LIGHT_BG, foreground=self.DARK_TEXT)
-        
-        # Style Tombol (Tidak ada perubahan)
-        style.configure("TButton", font=("Segoe UI", 10), padding=5, background="#E0E0E0", foreground=self.DARK_TEXT)
-        style.map("TButton", background=[('active', '#C0C0C0')])
-        
-        # Style Tombol Aksi Utama (CRUD & Export)
-        style.configure("Add.TButton", background="#4CAF50", foreground=self.WHITE_TEXT)
-        style.map("Add.TButton", background=[('active', '#66BB6A')])
-        style.configure("Edit.TButton", background="#2196F3", foreground=self.WHITE_TEXT)
-        style.map("Edit.TButton", background=[('active', '#42A5F5')])
-        style.configure("Delete.TButton", background="#F44336", foreground=self.WHITE_TEXT)
-        style.map("Delete.TButton", background=[('active', '#E57373')])
-        style.configure("Reset.TButton", background="#FF9800", foreground=self.WHITE_TEXT)
-        style.map("Reset.TButton", background=[('active', '#FFB74D')])
+
+        # Style Frame Input - use dark frame bg
+        style.configure("Form.TFrame", background=self.FRAME_BG)
+        style.configure("FormLabel.TLabel", background=self.FRAME_BG, foreground=self.DARK_TEXT)
+
+        # Style Tombol - dark buttons with subtle borders
+        style.configure("TButton", font=("Segoe UI", 10), padding=5, background="#1a2738", foreground=self.DARK_TEXT)
+        style.map("TButton", background=[('active', '#22354a')], foreground=[('disabled', '#777')])
+
+        # Action buttons (crisp colored accents)
+        style.configure("Add.TButton", background="#2E7D32", foreground=self.WHITE_TEXT)
+        style.map("Add.TButton", background=[('active', '#388E3C')])
+        style.configure("Edit.TButton", background=self.ACCENT_COLOR, foreground=self.WHITE_TEXT)
+        style.map("Edit.TButton", background=[('active', '#4ea0ff')])
+        style.configure("Delete.TButton", background="#C62828", foreground=self.WHITE_TEXT)
+        style.map("Delete.TButton", background=[('active', '#D32F2F')])
+        style.configure("Reset.TButton", background="#FF8F00", foreground=self.WHITE_TEXT)
+        style.map("Reset.TButton", background=[('active', '#FFA000')])
         style.configure("Upload.TButton", background=self.ACCENT_COLOR, foreground=self.WHITE_TEXT)
-        style.map("Upload.TButton", background=[('active', self.PRIMARY_COLOR)])
-        
-        # Style Treeview (Tabel) (Tidak ada perubahan)
-        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"), background=self.ACCENT_COLOR, foreground=self.WHITE_TEXT)
-        style.configure("Treeview", font=("Segoe UI", 10), rowheight=25)
+        style.map("Upload.TButton", background=[('active', '#1a64d8')])
+
+        # Style entries and treeview for dark theme
+        style.configure("TEntry", fieldbackground="#0f1720", foreground=self.DARK_TEXT)
+        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"), background=self.PRIMARY_COLOR, foreground=self.WHITE_TEXT)
+        style.configure("Treeview", font=("Segoe UI", 10), rowheight=25, background="#0b1116", foreground=self.DARK_TEXT, fieldbackground="#0b1116")
         style.map("Treeview", background=[('selected', self.ACCENT_COLOR)], foreground=[('selected', self.WHITE_TEXT)])
 
         # Header (Row 0) (Tidak ada perubahan)
@@ -393,13 +488,13 @@ class LaporanApp:
         btn_settings.pack(side="right", padx=6, pady=4)
 
         # Switch User button
-        btn_switch = tk.Button(header, text="🔄 Tukar Pengguna", bg="#DCD7FF", relief="flat", command=self.switch_user)
+        btn_switch = tk.Button(header, text="🔄 Tukar Pengguna", bg="#0f274d", fg=self.WHITE_TEXT, relief="flat", command=self.switch_user)
         btn_switch.pack(side="right", padx=6, pady=4)
-        style_button_hover(btn_switch, normal_bg="#DCD7FF", hover_bg="#E9E6FF", active_bg="#C0B5FF")
+        style_button_hover(btn_switch, normal_bg="#0f274d", hover_bg="#133a74", active_bg="#082046")
 
-        btn_logout = tk.Button(header, text="Log Out", bg="#DCD7FF", relief="flat", command=self.on_logout)
+        btn_logout = tk.Button(header, text="Log Out", bg="#0f274d", fg=self.WHITE_TEXT, relief="flat", command=self.on_logout)
         btn_logout.pack(side="right", padx=6, pady=4)
-        style_button_hover(btn_logout, normal_bg="#DCD7FF", hover_bg="#E9E6FF", active_bg="#C0B5FF")
+        style_button_hover(btn_logout, normal_bg="#0f274d", hover_bg="#133a74", active_bg="#082046")
 
         # Form top (Kontainer Utama Formulir) - Row 1 (Tidak ada perubahan)
         form_container = ttk.Frame(root, style="Form.TFrame", padding="10 5 10 5")
@@ -491,7 +586,9 @@ class LaporanApp:
             txt_frame = ttk.Frame(mid)
             txt_frame.grid(row=i*2+1, column=0, pady=(1, 5), sticky="ew")
             
-            txt = tk.Text(txt_frame, width=1, height=4, wrap="word", relief="flat", borderwidth=1, highlightthickness=1, highlightcolor=self.PRIMARY_COLOR, highlightbackground="#CCCCCC")
+            txt = tk.Text(txt_frame, width=1, height=4, wrap="word", relief="flat", borderwidth=1, highlightthickness=1,
+                          highlightcolor=self.PRIMARY_COLOR, highlightbackground=self.ACCENT_COLOR,
+                          bg="#0f1720", fg=self.DARK_TEXT, insertbackground=self.DARK_TEXT)
             txt.pack(side="left", fill="both", expand=True)
             
             vscroll = ttk.Scrollbar(txt_frame, orient="vertical", command=txt.yview)
@@ -515,7 +612,7 @@ class LaporanApp:
         preview_container.grid_rowconfigure(0, weight=1)
 
 
-        self.foto_label_main = tk.Label(preview_container, text="[Area Preview Foto]", width=1, height=1, relief="flat", bg="#EEEEEE", fg="#888888", anchor="center", font=("Segoe UI", 10))
+        self.foto_label_main = tk.Label(preview_container, text="[Area Preview Foto]", width=1, height=1, relief="flat", bg=self.FRAME_BG, fg=self.DARK_TEXT, anchor="center", font=("Segoe UI", 10))
         self.foto_label_main.grid(row=0, column=0, columnspan=3, sticky="nsew")
         self.foto_label_main.bind("<Configure>", self._on_preview_resize) 
 
@@ -681,7 +778,20 @@ class LaporanApp:
         table_frame.grid_columnconfigure(0, weight=1)
         
         self.tree.bind("<Double-1>", self.on_row_double_click)
-        self.tampilkan_data()
+
+        # Load table data in background to avoid blocking UI at startup
+        def _load_data_bg():
+            try:
+                df = load_data(self.excel_file)
+                # populate treeview on main thread
+                self.root.after(0, lambda: self.tampilkan_data(df))
+            except Exception:
+                try:
+                    self.root.after(0, lambda: self.tampilkan_data())
+                except Exception:
+                    pass
+
+        threading.Thread(target=_load_data_bg, daemon=True).start()
 
     # ---------------- PDF helpers 
 
@@ -1116,7 +1226,7 @@ class LaporanApp:
             self.btn_hapus_foto.config(state="normal")
         else:
             # Tidak ada foto
-            self.foto_label_main.configure(image="", text="[Area Preview Foto]", bg="#EEEEEE", fg="#888888")
+            self.foto_label_main.configure(image="", text="[Area Preview Foto]", bg=self.FRAME_BG, fg=self.DARK_TEXT)
             self.preview_img_refs = None
             self.status_label.configure(text=f"0 Foto")
             self.btn_prev.config(state="disabled")
@@ -1521,7 +1631,8 @@ class LaporanApp:
             txt_container.grid(row=row_idx, column=1, sticky="nsew", padx=(0, 15), pady=(5, 10))
             
             height = detail_heights[row_idx] if row_idx < len(detail_heights) else 3
-            txt = tk.Text(txt_container, width=1, height=height, wrap="word", relief="flat", borderwidth=1, state="disabled")
+            txt = tk.Text(txt_container, width=1, height=height, wrap="word", relief="flat", borderwidth=1, state="disabled",
+                          bg="#0f1720", fg=self.DARK_TEXT, insertbackground=self.DARK_TEXT, highlightbackground=self.ACCENT_COLOR)
             txt.pack(fill="both", expand=True)
             
             txt.config(state="normal")
@@ -1746,11 +1857,9 @@ class LaporanApp:
         self.set_form_data_from_row(row)
 
     # ---------------- Filter / Search (Tidak ada perubahan) ----------------
-    # ... (Tidak ada perubahan di sini)
     def apply_filter(self):
         """Menerapkan filter keyword dan/atau tanggal."""
         df = load_data(self.excel_file)
-        # Filter combobox contains display labels; map back to internal column key
         col_display = self.filter_col.get().strip()
         col = self.display_to_key.get(col_display, col_display)
         kw = self.filter_kw.get().strip().lower()
@@ -1837,7 +1946,12 @@ class LaporanApp:
         nama_safe = "".join(c for c in str(row.get("Nama","")) if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_") or "laporan_selected"
         tanggal_safe = str(to_ddmmyyyy(row.get("Tanggal",""))).replace("-", "")
         
-        out_path = filedialog.asksaveasfilename(title="Simpan PDF", defaultextension=".pdf", filetypes=[("PDF","*.pdf")], initialfile=f"laporan_{nama_safe}_{tanggal_safe}.pdf")
+        prev_month = get_previous_month_date()
+        bulan = get_bulan_indonesia(prev_month)
+        tahun = prev_month.strftime("%Y")
+        nama_user = self.entries["Nama"].get().strip().upper()
+        out_path = filedialog.asksaveasfilename(title="Simpan PDF", defaultextension=".pdf", filetypes=[("PDF","*.pdf")], 
+            initialfile=f"LAPORAN SKP - {nama_user} - BULAN {bulan} {tahun}.pdf")
         
         if out_path:
             if FPDF is None:
@@ -1899,7 +2013,12 @@ class LaporanApp:
             messagebox.showwarning("Kosong", "Tidak ada data untuk di-export.")
             return
             
-        out_path = filedialog.asksaveasfilename(title="Simpan semua laporan ke 1 PDF", defaultextension=".pdf", filetypes=[("PDF","*.pdf")], initialfile=f"laporan_all_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf")
+        prev_month = get_previous_month_date()
+        bulan = get_bulan_indonesia(prev_month)
+        tahun = prev_month.strftime("%Y")
+        nama_user = self.entries["Nama"].get().strip().upper()
+        out_path = filedialog.asksaveasfilename(title="Simpan semua laporan ke 1 PDF", defaultextension=".pdf", filetypes=[("PDF","*.pdf")], 
+            initialfile=f"LAPORAN SKP ({nama_user}) (BULAN {bulan} {tahun}).pdf")
         
         if not out_path:
             return
@@ -1938,9 +2057,11 @@ class LaporanApp:
                     if loading.cancelled:
                         break
 
-                    nama_safe = "".join(c for c in str(row.get("Nama","")) if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_") or f"row{idx}"
-                    tanggal_safe = str(to_ddmmyyyy(row.get("Tanggal",""))).replace("-", "")
-                    filename = os.path.join(out_dir, f"laporan_{nama_safe}_{tanggal_safe}_{idx}.pdf")
+                    prev_month = get_previous_month_date()
+                    bulan = get_bulan_indonesia(prev_month)
+                    tahun = prev_month.strftime("%Y")
+                    nama_user = row.get("Nama", "").strip().upper()
+                    filename = os.path.join(out_dir, f"LAPORAN SKP ({nama_user}) (BULAN {bulan} {tahun}).pdf")
 
                     pdf = FPDF()
                     pdf.add_page()
