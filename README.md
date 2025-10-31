@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="/img/Gambar_1.png" alt="" width="200"/>
+</p>
+<p align="center">
   <img src="/img/Walpaper.png" alt="" width="900"/>
 </p>
 

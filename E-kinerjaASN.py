@@ -7,9 +7,82 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 from pandas import Series
 from utils import resource_path
+import threading
+import time
+class LoadingWindow:
+    def __init__(self, parent):
+        self.window = tk.Toplevel(parent)
+        self.window.title("Export PDF")
+        self.window.geometry("300x180")
+        self.window.transient(parent)
+        self.window.grab_set()
+        self.window.resizable(False, False)
 
+        # Variable untuk mengontrol cancel
+        self.cancelled = False
 
+        # Posisi di tengah window utama
+        x = parent.winfo_x() + (parent.winfo_width() // 2 - 150)
+        y = parent.winfo_y() + (parent.winfo_height() // 2 - 90)
+        self.window.geometry(f"+{x}+{y}")
 
+        self.window.protocol("WM_DELETE_WINDOW", self.on_cancel)
+
+        # Frame utama dengan padding
+        self.frame = ttk.Frame(self.window, padding="20")
+        self.frame.pack(fill="both", expand=True)
+
+        # Label status
+        self.label = ttk.Label(self.frame, text="Proses export PDF...",
+                            font=("Segoe UI", 10, "bold"))
+        self.label.pack(pady=(0, 15))
+
+        # Progress bar
+        self.progress = ttk.Progressbar(self.frame, mode="indeterminate",
+                                     length=200)
+        self.progress.pack(fill="x", padx=20)
+
+        # Tombol Cancel
+        self.cancel_btn = ttk.Button(self.frame, text="Cancel",
+                                  command=self.on_cancel,
+                                  style="Danger.TButton")
+        self.cancel_btn.pack(pady=(15, 0))
+
+        # Style untuk tombol Cancel
+        style = ttk.Style()
+        style.configure("Danger.TButton", foreground="red")
+
+        # Mulai progress bar
+        self.progress.start(10)
+
+    def on_cancel(self):
+        if messagebox.askyesno("Konfirmasi", 
+                            "Apakah Anda yakin ingin membatalkan proses export?",
+                            parent=self.window):
+            self.cancelled = True
+            try:
+                self.window.quit()
+            except Exception:
+                pass
+            try:
+                self.window.destroy()
+            except Exception:
+                pass
+
+    def update_status(self, text):
+        try:
+            self.label.config(text=text)
+            self.window.update_idletasks()
+        except Exception:
+            pass
+
+    def destroy(self):
+        try:
+            if self.window.winfo_exists():
+                self.window.destroy()
+        except Exception:
+            pass
+import time
 try:
     from PIL import Image, ImageTk
     PIL_AVAILABLE = True
@@ -514,11 +587,11 @@ class LaporanApp:
 
         btn_export_excel = ttk.Button(export_frame, text="Export Semua → Excel", command=self.export_all_excel, style="Edit.TButton")
         btn_export_excel.pack(side="right", padx=3)
-        btn_export_many = ttk.Button(export_frame, text="Export Semua → PDF (Banyak)", command=self.export_all_multiple_pdfs, style="Reset.TButton")
+        btn_export_many = ttk.Button(export_frame, text="Export Semua → PDF (Pisah File)", command=self.export_all_multiple_pdfs, style="Reset.TButton")
         btn_export_many.pack(side="right", padx=3)
-        btn_export_all_pdf = ttk.Button(export_frame, text="Export Semua → PDF (Satu)", command=self.export_all_single_pdf, style="Add.TButton")
+        btn_export_all_pdf = ttk.Button(export_frame, text="Export Semua → PDF (Gabung)", command=self.export_all_single_pdf, style="Add.TButton")
         btn_export_all_pdf.pack(side="right", padx=3)
-        btn_export_sel = ttk.Button(export_frame, text="Export Pilih → PDF", command=self.export_selected_pdf, style="Edit.TButton")
+        btn_export_sel = ttk.Button(export_frame, text="Export → PDF (Pilih Satu File)", command=self.export_selected_pdf, style="Edit.TButton")
         btn_export_sel.pack(side="right", padx=3)
 
         # ------------------- Filter Box (Row 1 di kontainer) (Tidak ada perubahan) -------------------
@@ -765,84 +838,122 @@ class LaporanApp:
         if FPDF is None:
             messagebox.showwarning("Missing lib", "Install 'fpdf' (pip install fpdf) untuk export PDF.")
             return
-        
-        # Loading screen
-        loading_window = tk.Toplevel(self.root)
-        loading_window.title("Export PDF")
-        loading_window.geometry("300x150")
-        loading_window.transient(self.root)
-        loading_window.grab_set()
-        
-        # Center the loading window
-        loading_window.geometry("+%d+%d" % (
-            self.root.winfo_x() + (self.root.winfo_width() // 2 - 150),
-            self.root.winfo_y() + (self.root.winfo_height() // 2 - 75)
-        ))
-        
-        progress_frame = ttk.Frame(loading_window)
-        progress_frame.pack(expand=True, fill="both", padx=20, pady=20)
-        
-        loading_label = ttk.Label(progress_frame, text="Memproses PDF...")
-        loading_label.pack(pady=(0, 10))
-        
-        progress = ttk.Progressbar(progress_frame, mode="indeterminate")
-        progress.pack(fill="x", padx=20)
-        progress.start(10)
-        
-        try:
-            pdf = FPDF()
-            total = len(df)
-            
-            for idx, (_, row) in enumerate(df.iterrows(), 1):
-                pdf.add_page()
-                self._write_report_to_pdf_page(pdf, row)
-                loading_label.config(text=f"Memproses {idx} dari {total} laporan...")
-                loading_window.update()
-            
-            loading_label.config(text="Menyimpan file PDF...")
-            loading_window.update()
-            
-            # Pastikan direktori tujuan ada
-            os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-            
-            pdf.output(out_path)
-            loading_window.destroy()
-            messagebox.showinfo("Sukses", f"PDF semua laporan dibuat:\n{out_path}")
-        except Exception as e:
-            loading_window.destroy()
-            messagebox.showerror("Error", f"Gagal membuat PDF: {e}")
-            raise
+        # Use LoadingWindow and background thread so GUI stays responsive
+        loading = LoadingWindow(self.root)
+
+        def worker():
+            try:
+                total = len(df)
+                try:
+                    loading.progress.config(mode="determinate", maximum=total)
+                except Exception:
+                    pass
+
+                pdf = FPDF()
+
+                for idx, (_, row) in enumerate(df.iterrows(), 1):
+                    if loading.cancelled:
+                        return
+
+                    pdf.add_page()
+                    self._write_report_to_pdf_page(pdf, row)
+
+                    # update UI progress
+                    loading.window.after(0, lambda i=idx: [loading.progress.configure(value=i), loading.update_status(f"Memproses {i} dari {total} laporan...")])
+                    time.sleep(0.05)
+
+                if loading.cancelled:
+                    return
+
+                loading.window.after(0, lambda: loading.update_status("Menyimpan file PDF..."))
+                os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+                pdf.output(out_path)
+
+                if not loading.cancelled:
+                    self.root.after(0, lambda: [loading.destroy(), messagebox.showinfo("Sukses", f"PDF semua laporan dibuat:\n{out_path}")])
+            except Exception as e:
+                self.root.after(0, lambda: [loading.destroy(), messagebox.showerror("Error", f"Gagal membuat PDF: {e}")])
+            finally:
+                try:
+                    if loading.window.winfo_exists():
+                        self.root.after(0, loading.destroy)
+                except Exception:
+                    pass
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+
+        while thread.is_alive() and not loading.cancelled:
+            try:
+                self.root.update()
+                time.sleep(0.1)
+            except Exception:
+                break
 
     def export_each_row_to_pdf_files(self, df, out_dir):
         """Export setiap baris data ke file PDF terpisah."""
         if FPDF is None:
             messagebox.showwarning("Missing lib", "Install 'fpdf' (pip install fpdf) untuk export PDF.")
             return
-        
-        os.makedirs(out_dir, exist_ok=True)
-        created = []
-        
-        for idx, row in df.iterrows():
-            # Buat nama file yang aman dan deskriptif
-            nama_safe = "".join(c for c in str(row.get("Nama","")) if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_") or f"row{idx}"
-            tanggal_safe = str(to_ddmmyyyy(row.get("Tanggal",""))).replace("-", "")
-            
-            filename = os.path.join(out_dir, f"laporan_{nama_safe}_{tanggal_safe}_{idx+1}.pdf")
-            
-            pdf = FPDF()
-            pdf.add_page()
-            self._write_report_to_pdf_page(pdf, row)
-            
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+        except Exception:
+            pass
+
+        loading = LoadingWindow(self.root)
+        total = len(df)
+        try:
+            loading.progress.config(mode="determinate", maximum=total)
+        except Exception:
+            pass
+
+        def worker():
+            created = []
             try:
-                pdf.output(filename)
-                created.append(filename)
+                for idx, row in enumerate(df.iterrows(), 1):
+                    if loading.cancelled:
+                        break
+
+                    _i, r = row
+                    nama_safe = "".join(c for c in str(r.get("Nama","")) if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_") or f"row{idx}"
+                    tanggal_safe = str(to_ddmmyyyy(r.get("Tanggal",""))).replace("-", "")
+                    filename = os.path.join(out_dir, f"laporan_{nama_safe}_{tanggal_safe}_{idx}.pdf")
+
+                    pdf = FPDF()
+                    pdf.add_page()
+                    self._write_report_to_pdf_page(pdf, r)
+
+                    try:
+                        pdf.output(filename)
+                        created.append(filename)
+                    except Exception:
+                        pass
+
+                    # update UI
+                    loading.window.after(0, lambda i=idx: [loading.progress.configure(value=i), loading.update_status(f"Memproses {i} dari {total}...")])
+                    time.sleep(0.05)
+
+                if not loading.cancelled:
+                    msg = f"{len(created)} dari {total} file PDF berhasil dibuat\nLokasi: {out_dir}"
+                    self.root.after(0, lambda: [loading.destroy(), messagebox.showinfo("Sukses", msg)])
+            except Exception as e:
+                self.root.after(0, lambda: [loading.destroy(), messagebox.showerror("Error", f"Gagal membuat PDF: {e}")])
+            finally:
+                try:
+                    if loading.window.winfo_exists():
+                        self.root.after(0, loading.destroy)
+                except Exception:
+                    pass
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+
+        while thread.is_alive() and not loading.cancelled:
+            try:
+                self.root.update()
+                time.sleep(0.1)
             except Exception:
-                pass
-                
-        if created:
-            messagebox.showinfo("Sukses", f"{len(created)} file PDF dibuat di:\n{out_dir}")
-        else:
-            messagebox.showwarning("Hasil", "Tidak ada file PDF berhasil dibuat.")
+                break
 
     # identity functions 
     # ... (Tidak ada perubahan di sini)
@@ -1732,16 +1843,53 @@ class LaporanApp:
             if FPDF is None:
                 messagebox.showwarning("Missing lib", "Install 'fpdf' (pip install fpdf) untuk export PDF.")
                 return
-                
-            pdf = FPDF()
-            pdf.add_page()
 
-            self._write_report_to_pdf_page(pdf, row)
-            
             try:
-                pdf.output(out_path)
-                messagebox.showinfo("Sukses", f"PDF dibuat: {out_path}")
+                loading = LoadingWindow(self.root)
+                
+                def export_task():
+                    try:
+                        if loading.cancelled:
+                            return
+                            
+                        pdf = FPDF()
+                        pdf.add_page()
+                        self._write_report_to_pdf_page(pdf, row)
+                        
+                        if loading.cancelled:
+                            return
+                            
+                        loading.window.after(0, lambda: loading.update_status("Menyimpan file PDF..."))
+                        
+                        pdf.output(out_path)
+                        
+                        if not loading.cancelled:
+                            self.root.after(0, lambda: [
+                                loading.destroy(),
+                                messagebox.showinfo("Sukses", f"PDF dibuat:\n{out_path}")
+                            ])
+                            
+                    except Exception as e:
+                        self.root.after(0, lambda: [
+                            loading.destroy(),
+                            messagebox.showerror("Error", f"Gagal menyimpan PDF: {e}")
+                        ])
+                    finally:
+                        if not loading.cancelled and loading.window.winfo_exists():
+                            self.root.after(0, loading.destroy)
+                
+                # Jalankan export dalam thread terpisah
+                thread = threading.Thread(target=export_task, daemon=True)
+                thread.start()
+                
+                # Tunggu sampai thread selesai atau user cancel
+                while thread.is_alive() and not loading.cancelled:
+                    self.root.update()
+                    time.sleep(0.1)
+                    
             except Exception as e:
+                if 'loading' in locals():
+                    loading.destroy()
                 messagebox.showerror("Error", f"Gagal menyimpan PDF: {e}")
 
     def export_all_single_pdf(self):
@@ -1769,8 +1917,67 @@ class LaporanApp:
         
         if not out_dir:
             return
-            
-        self.export_each_row_to_pdf_files(df, out_dir)
+        # Use the shared LoadingWindow and run export in a background thread
+        if FPDF is None:
+            messagebox.showwarning("Missing lib", "Install 'fpdf' (pip install fpdf) untuk export PDF.")
+            return
+
+        loading = LoadingWindow(self.root)
+
+        total = len(df)
+        try:
+            loading.progress.config(mode="determinate", maximum=total)
+        except Exception:
+            pass
+
+        def worker():
+            created = []
+            try:
+                os.makedirs(out_dir, exist_ok=True)
+                for idx, (_, row) in enumerate(df.iterrows(), 1):
+                    if loading.cancelled:
+                        break
+
+                    nama_safe = "".join(c for c in str(row.get("Nama","")) if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_") or f"row{idx}"
+                    tanggal_safe = str(to_ddmmyyyy(row.get("Tanggal",""))).replace("-", "")
+                    filename = os.path.join(out_dir, f"laporan_{nama_safe}_{tanggal_safe}_{idx}.pdf")
+
+                    pdf = FPDF()
+                    pdf.add_page()
+                    self._write_report_to_pdf_page(pdf, row)
+
+                    try:
+                        pdf.output(filename)
+                        created.append(filename)
+                    except Exception:
+                        pass
+
+                    # update UI progress safely on main thread
+                    loading.window.after(0, lambda i=idx: [loading.progress.configure(value=i), loading.update_status(f"Memproses PDF {i} dari {total}...")])
+                    time.sleep(0.05)
+
+                if not loading.cancelled:
+                    msg = f"{len(created)} file PDF dibuat di:\n{out_dir}"
+                    self.root.after(0, lambda: [loading.destroy(), messagebox.showinfo("Sukses", msg)])
+            except Exception as e:
+                self.root.after(0, lambda: [loading.destroy(), messagebox.showerror("Error", f"Gagal membuat PDF: {e}")])
+            finally:
+                try:
+                    if loading.window.winfo_exists():
+                        self.root.after(0, loading.destroy)
+                except Exception:
+                    pass
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+
+        # Keep UI responsive while worker runs; allow cancel via loading.cancelled
+        while thread.is_alive() and not loading.cancelled:
+            try:
+                self.root.update()
+                time.sleep(0.1)
+            except Exception:
+                break
 
     def export_all_excel(self):
         """Export semua data ke file Excel."""
@@ -1778,61 +1985,59 @@ class LaporanApp:
         if df.empty:
             messagebox.showwarning("Kosong", "Tidak ada data untuk di-export.")
             return
-            
+
         out_path = filedialog.asksaveasfilename(title="Simpan semua data ke Excel", defaultextension=".xlsx", filetypes=[("Excel","*.xlsx")], initialfile=f"laporan_all_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx")
-        
         if not out_path:
             return
-        
-        # Loading screen
-        loading_window = tk.Toplevel(self.root)
-        loading_window.title("Export Excel")
-        loading_window.geometry("300x150")
-        loading_window.transient(self.root)
-        loading_window.grab_set()
-        
-        # Center the loading window
-        loading_window.geometry("+%d+%d" % (
-            self.root.winfo_x() + (self.root.winfo_width() // 2 - 150),
-            self.root.winfo_y() + (self.root.winfo_height() // 2 - 75)
-        ))
-        
-        progress_frame = ttk.Frame(loading_window)
-        progress_frame.pack(expand=True, fill="both", padx=20, pady=20)
-        
-        loading_label = ttk.Label(progress_frame, text="Memproses data Excel...")
-        loading_label.pack(pady=(0, 10))
-        
-        progress = ttk.Progressbar(progress_frame, mode="indeterminate")
-        progress.pack(fill="x", padx=20)
-        progress.start(10)
-        
-        try:
-            df_export = df.copy()
-            
-            if "Tanggal" in df_export.columns:
-                loading_label.config(text="Memformat tanggal...")
-                loading_window.update()
-                df_export["Tanggal"] = df_export["Tanggal"].apply(lambda x: to_ddmmyyyy(x) if x else "")
-            
-            loading_label.config(text="Menyimpan file Excel...")
-            loading_window.update()
-            
-            # Pastikan direktori tujuan ada
-            os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-            
-            # Rename columns for export to show user display labels
-            try:
-                df_export_renamed = df_export.rename(columns=self.display_labels)
-            except Exception:
-                df_export_renamed = df_export
 
-            df_export_renamed.to_excel(out_path, index=False, engine="openpyxl")
-            loading_window.destroy()
-            messagebox.showinfo("Sukses", f"Excel dibuat: {out_path}")
-        except Exception as e:
-            loading_window.destroy()
-            messagebox.showerror("Error", f"Gagal menyimpan Excel: {e}\nPastikan library 'openpyxl' terinstal.")
+        if not OPENPYXL_AVAILABLE:
+            messagebox.showwarning("Missing lib", "Install 'openpyxl' (pip install openpyxl) untuk export Excel.")
+            return
+
+        # Buat loading window
+        loading = LoadingWindow(self.root)
+
+        def export_task():
+            try:
+                df_export = df.copy()
+
+                if "Tanggal" in df_export.columns:
+                    # update status
+                    loading.window.after(0, lambda: loading.update_status("Memformat tanggal..."))
+                    df_export["Tanggal"] = df_export["Tanggal"].apply(lambda x: to_ddmmyyyy(x) if x else "")
+
+                loading.window.after(0, lambda: loading.update_status("Menyimpan file Excel..."))
+                # Pastikan direktori tujuan ada
+                os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+
+                try:
+                    df_export_renamed = df_export.rename(columns=self.display_labels)
+                except Exception:
+                    df_export_renamed = df_export
+
+                df_export_renamed.to_excel(out_path, index=False, engine="openpyxl")
+
+                if not loading.cancelled:
+                    self.root.after(0, lambda: [loading.destroy(), messagebox.showinfo("Sukses", f"Excel dibuat: {out_path}")])
+            except Exception as e:
+                self.root.after(0, lambda: [loading.destroy(), messagebox.showerror("Error", f"Gagal menyimpan Excel: {e}\nPastikan library 'openpyxl' terinstal.")])
+            finally:
+                try:
+                    if loading.window.winfo_exists():
+                        self.root.after(0, loading.destroy)
+                except Exception:
+                    pass
+
+        thread = threading.Thread(target=export_task, daemon=True)
+        thread.start()
+
+        # Tunggu sampai thread selesai atau user cancel
+        while thread.is_alive() and not loading.cancelled:
+            try:
+                self.root.update()
+                time.sleep(0.1)
+            except Exception:
+                break
 
     # ---------------- Logout (Tidak ada perubahan) ----------------
 
