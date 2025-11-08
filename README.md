@@ -51,125 +51,181 @@ source .venv/Scripts/activate
 pip install -r requirements.txt
 ```
 
-4. Run the app:
+# Apk Pencatatan Surat Masuk dan Keluar
+
+Dokumentasi resmi dalam Bahasa Indonesia untuk aplikasi desktop ringan yang dibuat dengan
+Tkinter. Aplikasi ini dirancang untuk membantu pencatatan surat masuk dan keluar secara sederhana,
+dengan fitur impor/ekspor Excel dan penyimpanan lokal menggunakan SQLite.
+
+## Daftar Isi
+
+- [Sorotan](#sorotan)
+- [Persiapan cepat](#persiapan-cepat)
+- [Kebutuhan Sistem](#kebutuhan-sistem)
+- [Konfigurasi](#konfigurasi)
+- [Panduan Penggunaan](#panduan-penggunaan)
+- [Struktur Proyek](#struktur-proyek)
+- [Pengembangan & Pengujian](#pengembangan--pengujian)
+- [Distribusi / Packaging](#distribusi--packaging)
+- [Kontribusi](#kontribusi)
+- [Troubleshooting](#troubleshooting)
+- [Lisensi](#lisensi)
+- [Changelog](#changelog)
+
+## Sorotan
+
+- CRUD sederhana untuk surat masuk dan keluar (nomor, tanggal, pihak, perihal, penanggung, catatan).
+- Impor dan ekspor Excel (.xlsx) menggunakan `openpyxl`.
+- Penyimpanan lokal dengan SQLite — tidak perlu server eksternal.
+- Basis kode kecil dan mudah dimodifikasi.
+
+## Persiapan cepat
+
+1. Salin atau clone repository ini ke mesin Anda.
+2. (Opsional) Buat dan aktifkan virtual environment:
+
+```bash
+python -m venv .venv
+# PowerShell
+.\.venv\Scripts\Activate.ps1
+# cmd
+.\.venv\Scripts\activate.bat
+# Git Bash / WSL
+source .venv/Scripts/activate
+```
+
+3. Install dependensi:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Jalankan aplikasi:
 
 ```bash
 python Apk_Surat_Masuk_Keluar.py
 ```
 
-The app window should open. Use the left menu to switch between "Surat Masuk" and "Surat Keluar".
+Jendela aplikasi akan muncul. Gunakan menu di sisi kiri untuk beralih antara "Surat Masuk" dan "Surat Keluar".
 
-## Requirements
+## Kebutuhan Sistem
 
-- Python 3.8+
-- See `requirements.txt` (this project uses at least `openpyxl` and `Pillow`)
+- Python 3.8 atau lebih baru
+- Paket: lihat `requirements.txt` (minimal `openpyxl` dan `Pillow`)
 
-## Configuration
+## Konfigurasi
 
-Database location
+Lokasi Database
 
-- By design the application stores the SQLite database in the user's Local AppData folder to keep
-  per-user data separate and avoid committing the database to source control.
+- Aplikasi menyimpan file database SQLite per pengguna di folder Local AppData agar data pengguna
+  terpisah dan tidak ikut ter-commit ke repository.
 
-Default path on Windows:
+Lokasi default pada Windows:
 
 ```
 C:\Users\<username>\AppData\Local\DataBase-Surat Masuk Keluar\DataBase.db
 ```
 
-- The app uses the `LOCALAPPDATA` environment variable when present; otherwise it falls back to
-  `<home>/AppData/Local`.
-- Database directory is created automatically if missing. Do not commit or upload the DB file to GitHub.
+- Aplikasi memanfaatkan variabel lingkungan `LOCALAPPDATA` bila tersedia; bila tidak, akan
+  menggunakan `<home>/AppData/Local` sebagai fallback.
+- Folder database akan dibuat otomatis jika belum ada.
+- Jangan mengunggah atau men-commit file database ke GitHub; `.gitignore` sudah dikonfigurasi untuk
+  mengabaikan file DB lokal.
 
 Logging
 
-- Basic logging is enabled and printed to the console. Check console output for diagnostics when
-  troubleshooting import/export or file access issues.
+- Logging dasar diaktifkan dan dikirim ke konsol. Periksa output konsol untuk mendapatkan pesan
+  diagnostik saat terjadi masalah pada impor/ekspor atau akses berkas.
 
-## Usage
+## Panduan Penggunaan
 
-- Add a letter: fill the fields in the "Input / Edit Surat" form and click "Tambah / Update".
-- Edit: double-click a row in the table to prefill the form, make changes, then click "Tambah / Update".
-- Delete: select a row and click "Hapus Terpilih" (be cautious — currently no undo; consider backing up DB).
-- Search/Reset: use the search box to filter the table by nomor/pihak/perihal/penanggung.
-- Import: `Import Excel` expects an .xlsx with headers (ID optional). The app attempts to map columns
-  and skip invalid rows.
-- Export: `Ekspor Excel` will save the currently visible rows into an .xlsx file.
+- Menambah surat: isi kolom di bagian "Input / Edit Surat" lalu klik "Tambah / Update".
+- Mengedit surat: klik ganda baris pada tabel untuk mengisi form, ubah data, lalu klik "Tambah / Update".
+- Menghapus surat: pilih baris lalu klik "Hapus Terpilih". Hati-hati — saat ini belum ada fitur undo;
+  lakukan backup DB jika perlu.
+- Pencarian: gunakan kotak pencarian untuk memfilter berdasarkan nomor, pihak, perihal, atau penanggung.
+- Impor Excel: gunakan tombol "Import Excel"; file .xlsx diharapkan memiliki header. Aplikasi akan
+  mencoba memetakan kolom dan melewati baris yang tidak valid.
+- Ekspor Excel: gunakan tombol "Ekspor Excel" untuk menyimpan baris yang terlihat ke file .xlsx.
 
-Notes on dates
+Catatan tentang tanggal
 
-- The UI expects date input in `DD-MM-YYYY`. Internally the app stores date strings; future improvement
-  suggestion: convert/save dates in ISO (YYYY-MM-DD) for reliable sorting/filtering.
+- Form meminta format tanggal `DD-MM-YYYY`. Saat ini tanggal disimpan sebagai string; disarankan untuk
+  menyimpan tanggal dalam format ISO (`YYYY-MM-DD`) di perbaikan selanjutnya agar penyortiran lebih akurat.
 
-## Project structure
+## Struktur Proyek
 
-Important files and folders:
+Berkas dan folder penting:
 
-- `Apk_Surat_Masuk_Keluar.py` — main application (GUI + DB wrapper class)
-- `requirements.txt` — Python dependencies
-- `README.md` — this file
-- `.gitignore` — patterns for files that should not be committed (DB, virtualenv, temporary files)
-- `LICENSE` — project license
-- `CHANGELOG.md`, `version.txt` — release history and version meta
-- `icon/`, `img/` — images and assets
+- `Apk_Surat_Masuk_Keluar.py` — aplikasi utama (GUI + wrapper DB)
+- `requirements.txt` — daftar dependensi Python
+- `README.md` — dokumentasi (file ini)
+- `.gitignore` — pola berkas yang akan diabaikan oleh Git (termasuk DB lokal)
+- `LICENSE` — lisensi proyek
+- `CHANGELOG.md`, `version.txt` — catatan rilis dan versi
+- `icon/`, `img/` — aset gambar/logo
 
-## Development & testing
+## Pengembangan & Pengujian
 
-- Follow the style guidelines in `CONTRIBUTING.md`.
-- To run a quick static check (flake8):
+- Ikuti panduan kontribusi pada `CONTRIBUTING.md`.
+- Static check (opsional):
 
 ```bash
 pip install flake8
 flake8 Apk_Surat_Masuk_Keluar.py
 ```
 
-- For unit testing, consider extracting the DB logic into `db.py` and adding tests that use
-  an in-memory SQLite DB (`sqlite3.connect(':memory:')`). I can help with a test scaffold.
+- Untuk pengujian unit, saya sarankan memisahkan logika database menjadi `db.py`, lalu menulis
+  test yang menggunakan SQLite in-memory (`sqlite3.connect(':memory:')`). Saya dapat membantu
+  membuat kerangka test jika Anda mau.
 
-## Packaging / Distribution
+## Distribusi / Packaging
 
-- To create a Windows executable, use `pyinstaller`:
+- Untuk membuat executable Windows (EXE) gunakan `pyinstaller`:
 
 ```bash
 pip install pyinstaller
 pyinstaller --onefile --windowed Apk_Surat_Masuk_Keluar.py
 ```
 
-- Note: when packaging, ensure static assets (logo) are included and update code to reference bundled paths.
+- Jika Anda membundel aset (logo), pastikan menyertakannya dalam opsi PyInstaller atau menyesuaikan
+  path pada kode agar dapat menemukan aset saat dijalankan dari executable.
 
-## Contributing
+## Kontribusi
 
-Please see `CONTRIBUTING.md` for contribution guidelines. A few highlights:
+Terima kasih bila Anda ingin berkontribusi. Hal penting:
 
-- Do not commit the local SQLite DB (it's ignored via `.gitignore`).
-- Use feature branches and descriptive commit messages.
-- Add tests for new functionality where appropriate.
+- Jangan men-commit file database lokal (`*.db`, `DataBase.db`). File tersebut sudah di-ignore.
+- Gunakan branch fitur dan pesan commit yang jelas.
+- Tambahkan test untuk fitur baru bila memungkinkan.
+
+Lihat juga `CONTRIBUTING.md` untuk panduan lengkap.
 
 ## Troubleshooting
 
-- If the app fails to start: check Python version and that dependencies from `requirements.txt` are installed.
-- If Excel import fails for a file: open the file in Excel/LibreOffice and verify headers and column order.
-- If the app cannot create the DB: verify permissions on `%LOCALAPPDATA%` and that disk space is available.
+- Aplikasi tidak mau jalan: periksa versi Python dan pastikan dependensi ter-install.
+- Impor Excel gagal: buka file di Excel atau LibreOffice untuk verifikasi header dan urutan kolom.
+- Aplikasi gagal membuat DB: periksa izin pada `%LOCALAPPDATA%` dan pastikan ruang disk mencukupi.
 
-## License
+## Lisensi
 
-This project is released under the MIT License — see `LICENSE` for details.
+Proyek ini dirilis di bawah lisensi MIT — lihat berkas `LICENSE` untuk detail.
 
 ## Changelog
 
-See `CHANGELOG.md` for release notes and version history.
+Lihat `CHANGELOG.md` untuk histori rilis.
 
-## Support / Contact
+## Dukungan
 
-If you encounter issues or want enhancements, please open an issue on GitHub or contact the maintainer.
+Jika menemukan masalah atau ingin fitur baru, silakan buka issue di GitHub repository atau hubungi pemelihara.
 
 ---
 
-If you'd like, I can also:
+Ingin saya lanjutkan ke salah satu dari berikut?
 
-- split the code into `db.py`/`ui.py` for better testability,
-- add unit tests for the DB layer, or
-- prepare a small GitHub Actions workflow for linting and basic checks.
+- Memecah kode menjadi `db.py` dan `ui.py` untuk testabilitas,
+- Menambahkan unit test untuk lapisan DB (surat),
+- Menambahkan workflow GitHub Actions untuk linting (flake8) dan tes ringan.
 
-Tell me which of those you'd like next and I will implement them.
+Balas dengan pilihan Anda dan saya akan lanjutkan.
 # Apk-Surat-Masuk-keluar
