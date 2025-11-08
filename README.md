@@ -1,165 +1,175 @@
-<p align="center">
-  <img src="/img/Gambar_1.png" alt="" width="200"/>
-</p>
-<p align="center">
-  <img src="/img/Gambar 2.png" alt="" width="900"/>
-</p>
+Apk Pencatatan Surat Masuk dan Keluar
 
-# 🏢 APLIKASI LAPORAN E-KINERJA
+## Ringkasan
 
-[![License](https://img.shields.io/github/license/Sneijderlino/Aplikasi-Laporan-eKINERJA?style=for-the-badge&color=2ecc71)](LICENSE)
-[![Python Version](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=for-the-badge&logo=python)](https://www.python.org/)
-[![CI](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/actions/workflows/python-app.yml/badge.svg)](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/actions)
-[![OS Support](https://img.shields.io/badge/OS-Windows%20%7C%20Linux%20%7C%20macOS-informational?style=for-the-badge)](https://www.python.org/)
+Aplikasi GUI sederhana berbasis Tkinter untuk mencatat surat masuk dan keluar, menyimpan data ke SQLite, serta impor/ekspor Excel.
 
-_Aplikasi Desktop Manajemen Laporan Otomatis E-KINERJA Berbasis Python & Tkinter._
+# Apk Pencatatan Surat Masuk dan Keluar
 
-## 🎯 Tujuan Proyek
+Profesional, ringan, dan mudah digunakan — aplikasi desktop sederhana berbasis Tkinter untuk mencatat,
+mengelola, mengimpor, dan mengekspor surat masuk dan surat keluar.
 
-_Aplikasi Laporan E-KINERJA_ dikembangkan untuk memudahkan proses pencatatan, pengelolaan, dan pelaporan data E-KINERJA. Aplikasi ini menyimpan data ASN secara persisten dan mampu mengekspor laporan ke format Excel dan PDF.
+## Table of Contents
 
-## ✨ Fitur Utama
+- [Highlights](#highlights)
+- [Quick start](#quick-start)
+- [Requirements](#requirements)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Project structure](#project-structure)
+- [Development & testing](#development--testing)
+- [Packaging / Distribution](#packaging--distribution)
+- [Contributing](#contributing)
+- [License](#license)
+- [Changelog](#changelog)
 
-- _Modern GUI:_ Antarmuka pengguna grafis (GUI) yang modern dan responsif menggunakan _CustomTkinter_ dengan tema yang menarik.
-- _Penyimpanan Data Terpadu:_ Menggunakan file **laporan_asn.xlsx** (Excel) sebagai database utama dan **identitas_asn.json** untuk menyimpan data identitas ASN dengan validasi data.
-- _Identitas Persisten:_ Data Nama, NIP, Jabatan, dan Unit Kerja ASN disimpan dan dikunci secara otomatis dengan enkripsi data sensitif.
-- _Dukungan Multimedia:_ Menyertakan _Pillow_ untuk upload, preview, dan optimasi foto di form input.
-- _Export Multi-Format:_ Mampu mengekspor laporan ke format _Excel (.xlsx)_ dan _PDF (.pdf)_ dengan template yang dapat disesuaikan.
-- _Operasi CRUD Lengkap:_ Mendukung operasi Tambah, Ubah, dan Hapus (CRUD) laporan dengan validasi data.
-- _Backup & Restore:_ Fitur backup otomatis dan kemampuan restore data.
+## Highlights
 
-## ⚙ Prasyarat Sistem & Dependensi
+- Simple CRUD for incoming/outgoing letters (nomor, tanggal, pihak, perihal, penanggung, catatan)
+- Import / Export Excel (.xlsx) using openpyxl
+- Local persistence with SQLite (no external DB required)
+- Small, focused codebase — easy to inspect and modify
 
-### A. Dependensi Python
+## Quick start
 
-Aplikasi ini membutuhkan library berikut untuk fungsionalitas penuh:
-
-| Library         | Kegunaan                                                       | Versi Min. |
-| :-------------- | :------------------------------------------------------------- | :--------- |
-| _pandas_        | Pengolahan dan penyimpanan data ke/dari Excel.                 | 2.1.0      |
-| _openpyxl_      | Mesin backend untuk Pandas & fitur penyisipan gambar ke Excel. | 3.1.2      |
-| _customtkinter_ | Framework GUI modern dengan tema yang menarik.                 | 5.2.0      |
-| _Pillow_        | Manajemen dan optimasi gambar.                                 | 10.0.0     |
-| _fpdf_          | Pembuatan laporan dalam format PDF.                            | 1.7.2      |
-| _xlsxwriter_    | Pemformatan Excel lanjutan dan templating.                     | 3.1.2      |
-
-### B. Prasyarat Sistem
-
-- _Python 3.11+_
-- _Git_
-- Minimum 4GB RAM
-- 500MB ruang disk
-- Resolusi layar minimum 1366x768
-
----
-
-## 🚀 Instalasi dan Penggunaan
-
-### Langkah 1: Klon Repositori
+1. Clone or copy this repository to your machine.
+2. (Optional) Create and activate a virtual environment:
 
 ```bash
-git clone https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA.git
-cd Aplikasi-Laporan-eKINERJA
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+# Windows cmd
+.\.venv\Scripts\activate.bat
+# Git Bash / WSL
+source .venv/Scripts/activate
 ```
 
----
-
-### Langkah 2: Siapkan Lingkungan Virtual (Virtual Environment)
-
-Langkah 2: Siapkan Lingkungan Virtual (Virtual Environment)
-Sangat disarankan untuk mengisolasi proyek ini.
+3. Install dependencies:
 
 ```bash
-# Buat venv
-python3 -m venv venv
-# Aktifkan venv (Linux/macOS)
-source venv/bin/activate
-# Aktifkan venv (Windows PowerShell)
-# .\venv\Scripts\activate
-```
-
----
-
-### Langkah 3: Instal Dependensi
-
-```bash
-Pastikan Anda berada di lingkungan virtual yang sudah aktif, lalu instal semua library:
 pip install -r requirements.txt
 ```
 
----
-
-### Langkah 4: Menjalankan Aplikasi
+4. Run the app:
 
 ```bash
-Jalankan skrip utama:
-python E-kinerjaASN.py
+python Apk_Surat_Masuk_Keluar.py
 ```
 
+The app window should open. Use the left menu to switch between "Surat Masuk" and "Surat Keluar".
+
+## Requirements
+
+- Python 3.8+
+- See `requirements.txt` (this project uses at least `openpyxl` and `Pillow`)
+
+## Configuration
+
+Database location
+
+- By design the application stores the SQLite database in the user's Local AppData folder to keep
+  per-user data separate and avoid committing the database to source control.
+
+Default path on Windows:
+
+```
+C:\Users\<username>\AppData\Local\DataBase-Surat Masuk Keluar\DataBase.db
+```
+
+- The app uses the `LOCALAPPDATA` environment variable when present; otherwise it falls back to
+  `<home>/AppData/Local`.
+- Database directory is created automatically if missing. Do not commit or upload the DB file to GitHub.
+
+Logging
+
+- Basic logging is enabled and printed to the console. Check console output for diagnostics when
+  troubleshooting import/export or file access issues.
+
+## Usage
+
+- Add a letter: fill the fields in the "Input / Edit Surat" form and click "Tambah / Update".
+- Edit: double-click a row in the table to prefill the form, make changes, then click "Tambah / Update".
+- Delete: select a row and click "Hapus Terpilih" (be cautious — currently no undo; consider backing up DB).
+- Search/Reset: use the search box to filter the table by nomor/pihak/perihal/penanggung.
+- Import: `Import Excel` expects an .xlsx with headers (ID optional). The app attempts to map columns
+  and skip invalid rows.
+- Export: `Ekspor Excel` will save the currently visible rows into an .xlsx file.
+
+Notes on dates
+
+- The UI expects date input in `DD-MM-YYYY`. Internally the app stores date strings; future improvement
+  suggestion: convert/save dates in ISO (YYYY-MM-DD) for reliable sorting/filtering.
+
+## Project structure
+
+Important files and folders:
+
+- `Apk_Surat_Masuk_Keluar.py` — main application (GUI + DB wrapper class)
+- `requirements.txt` — Python dependencies
+- `README.md` — this file
+- `.gitignore` — patterns for files that should not be committed (DB, virtualenv, temporary files)
+- `LICENSE` — project license
+- `CHANGELOG.md`, `version.txt` — release history and version meta
+- `icon/`, `img/` — images and assets
+
+## Development & testing
+
+- Follow the style guidelines in `CONTRIBUTING.md`.
+- To run a quick static check (flake8):
+
+```bash
+pip install flake8
+flake8 Apk_Surat_Masuk_Keluar.py
+```
+
+- For unit testing, consider extracting the DB logic into `db.py` and adding tests that use
+  an in-memory SQLite DB (`sqlite3.connect(':memory:')`). I can help with a test scaffold.
+
+## Packaging / Distribution
+
+- To create a Windows executable, use `pyinstaller`:
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed Apk_Surat_Masuk_Keluar.py
+```
+
+- Note: when packaging, ensure static assets (logo) are included and update code to reference bundled paths.
+
+## Contributing
+
+Please see `CONTRIBUTING.md` for contribution guidelines. A few highlights:
+
+- Do not commit the local SQLite DB (it's ignored via `.gitignore`).
+- Use feature branches and descriptive commit messages.
+- Add tests for new functionality where appropriate.
+
+## Troubleshooting
+
+- If the app fails to start: check Python version and that dependencies from `requirements.txt` are installed.
+- If Excel import fails for a file: open the file in Excel/LibreOffice and verify headers and column order.
+- If the app cannot create the DB: verify permissions on `%LOCALAPPDATA%` and that disk space is available.
+
+## License
+
+This project is released under the MIT License — see `LICENSE` for details.
+
+## Changelog
+
+See `CHANGELOG.md` for release notes and version history.
+
+## Support / Contact
+
+If you encounter issues or want enhancements, please open an issue on GitHub or contact the maintainer.
+
 ---
 
-## 📥 Cara Download Aplikasi (Versi Rilis)
+If you'd like, I can also:
 
-Kamu juga dapat langsung _mengunduh file aplikasi yang sudah jadi_ melalui halaman rilis GitHub.
+- split the code into `db.py`/`ui.py` for better testability,
+- add unit tests for the DB layer, or
+- prepare a small GitHub Actions workflow for linting and basic checks.
 
-### 🪄 Langkah 1: Buka Halaman Rilis
-
-1. Klik tab **[Releases](https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/releases)** pada repository ini.
-2. Pilih versi rilis terbaru (v1.0).
-
-### 💾 Langkah 2: Unduh File
-
-- Cari bagian _“Assets”_ di bawah rilis tersebut.
-- Klik file .zip ATAU .tar.gz untuk mengunduhnya ke perangkatmu.
-
-### 🖥 Langkah 3: Ekstrak & Jalankan
-
-- Ekstrak file .zip ke folder yang kamu inginkan.
-- Jika file .exe tersedia → klik 2× untuk langsung membuka aplikasi.
-- Jika file .py (source code):
-
-  ```bash
-  # Pastikan Python 3.8+ sudah terpasang
-  python laporan_app.py
-
-  ```
-
-### ✅ Tips:
-
-- Gunakan Windows 10/11 atau Linux dengan Python 3.8+
-
-- Jika diperlukan, install dependensi dari requirements.txt:
-- pip install -r requirements.txt
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Made%20with-Python-blue?style=for-the-badge&logo=python" alt="Python Badge"/>
-  <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" alt="Status Active"/>
-  <img src="https://img.shields.io/github/stars/Sneijderlino/youtube-downloader-pro?style=for-the-badge" alt="GitHub Stars"/>
-  <img src="https://img.shields.io/github/forks/Sneijderlino/youtube-downloader-pro?style=for-the-badge" alt="GitHub Forks"/>
-</p>
-
----
-
-<h3 align="center">📜 Lisensi</h3>
-
-<p align="center">
-  Proyek ini dilisensikan di bawah <a href="LICENSE">MIT License</a>.<br>
-  Bebas digunakan, dimodifikasi, dan dibagikan selama mencantumkan kredit.
-</p>
-
----
-
-<h3 align="center">💬 Dukungan & Kontribusi</h3>
-
-<p align="center">
-  💡 Temukan bug atau ingin menambahkan fitur baru?<br>
-  Silakan buka <a href="https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/issues">Issues</a> atau buat <a href="https://github.com/Sneijderlino/Aplikasi-Laporan-eKINERJA/pulls">Pull Request</a>.<br><br>
-  ⭐ Jangan lupa beri bintang jika proyek ini bermanfaat!
-</p>
-
----
-
-<p align="center">
-  Dibuat dengan ❤ oleh <a href="https://www.tiktok.com/@sneijderlino_official?is_from_webapp=1&sender_device=pc">Sneijderlino</a><br>
-  <em>“Code. Create. Conquer.”</em>
-</p>
+Tell me which of those you'd like next and I will implement them.
+# Apk-Surat-Masuk-keluar
