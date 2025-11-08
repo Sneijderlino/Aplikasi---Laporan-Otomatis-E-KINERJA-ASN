@@ -13,11 +13,19 @@ Terima kasih telah tertarik untuk berkontribusi! Berikut panduan singkat agar ko
 6. Push ke branch Anda dan buat Pull Request.
 
 ## Style dan kualitas
+
 - Gunakan `snake_case` untuk nama file Python.
 - Ikuti PEP8; disarankan menggunakan `flake8`.
 - Hindari men-commit file besar/biner yang tidak perlu (mis. dataset). Gunakan `.gitignore`.
 
+## Catatan tentang Database
+
+- Aplikasi menyimpan file database lokal di Local AppData setiap pengguna:
+  `C:\Users\<username>\AppData\Local\DataBase-Surat Masuk Keluar\DataBase.db`.
+- Jangan men-commit file database (`*.db`, `DataBase.db`) ke repo. `.gitignore` sudah dikonfigurasi untuk mengecualikannya.
+
 ## Issue & PR
+
 - Jelaskan langkah reproduksi untuk bug.
 - Tulis deskripsi dan alasan untuk fitur baru.
 - Sertakan screenshot jika berkaitan dengan UI.

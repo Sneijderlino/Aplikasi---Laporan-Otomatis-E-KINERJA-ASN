@@ -1,8 +1,8 @@
 # UTF-8
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 1, 0, 0),
-    prodvers=(1, 1, 0, 0),
+    filevers=(1, 1, 1, 0),
+    prodvers=(1, 1, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -13,13 +13,13 @@ VSVersionInfo(
   kids=[
     StringFileInfo([
       StringTable('040904B0', [
-        StringStruct('CompanyName', 'Sneijderlino Official'),
-        StringStruct('FileDescription', 'Aplikasi Laporan E-Kinerja ASN'),
-        StringStruct('FileVersion', 'V1.1.0'),
-        StringStruct('InternalName', 'E-kinerjaASN'),
-        StringStruct('OriginalFilename', 'E-kinerjaASN.exe'),
-        StringStruct('ProductName', 'E-Kinerja ASN'),
-        StringStruct('ProductVersion', 'V1.1.0')])
+        StringStruct('CompanyName', 'Sneijderlino'),
+        StringStruct('FileDescription', 'Apk Pencatatan Surat Masuk dan Keluar'),
+        StringStruct('FileVersion', '1.1.1'),
+        StringStruct('InternalName', 'Apk_Surat_Masuk_Keluar'),
+        StringStruct('OriginalFilename', 'Apk_Surat_Masuk_Keluar.py'),
+        StringStruct('ProductName', 'Apk Surat Masuk dan Keluar'),
+        StringStruct('ProductVersion', '1.1.1')])
       ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]

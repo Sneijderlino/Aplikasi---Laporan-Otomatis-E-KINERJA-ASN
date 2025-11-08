@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 venv/
+
+# Additional ignores
+.env
 .venv/
 .mypy_cache/
 
